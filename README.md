@@ -6,7 +6,7 @@ A feature-rich Neovim plugin for working with [Mermaid](https://mermaid.js.org/)
 
 ## ✨ Features
 
-- **syntax Highlighting**: Full Tree-sitter support for all Mermaid diagram types.
+- **Syntax Highlighting**: Relies on [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (official support).
 - **Live Preview**: 
   - **Real-time**: Diagram updates instantly as you type.
   - **Interactive**: Pan and Zoom support (with `svg-pan-zoom`).
