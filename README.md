@@ -7,15 +7,15 @@ A feature-rich Neovim plugin for working with [Mermaid](https://mermaid.js.org/)
 ## ✨ Features
 
 - **Syntax Highlighting**: Relies on [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (official support).
-- **Live Preview**: 
+- **Live Preview**:
   - **Real-time**: Diagram updates instantly as you type.
   - **Interactive**: Pan and Zoom support (with `svg-pan-zoom`).
   - **Toolbar**: Custom controls for Zoom, Reset, **Copy Image (PNG)**, and Downloading SVG.
   - **Zero-config**: Built-in Lua HTTP server (no external node/python server needed).
-- **Auto-Formatting**: 
+- **Auto-Formatting**:
   - Built-in indentation engine (no `prettier` dependency required).
   - Smart handling of blocks, diagrams, and directives.
-- **Diagnostics**: 
+- **Diagnostics**:
   - Integration with `vim.diagnostic` to show syntax errors (requires `mermaid-cli`).
 
 ## ⚡ Requirements
@@ -31,11 +31,11 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 return {
-    "your-username/mermaid.nvim",
+    "kevalin/mermaid.nvim",
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     config = function()
         require("mermaid").setup()
-        
+
         -- Install the tree-sitter parser manually if TSInstall fails
         -- :TSInstall mermaid
     end,
@@ -62,10 +62,10 @@ require('mermaid').setup({
 
 ### Commands
 
-| Command | Description |
-| :--- | :--- |
+| Command           | Description                                                       |
+| :---------------- | :---------------------------------------------------------------- |
 | `:MermaidPreview` | Open a Live Preview in your browser (localhost). Updates on edit. |
-| `:MermaidFormat` | Auto-format the current buffer (indentation). |
+| `:MermaidFormat`  | Auto-format the current buffer (indentation).                     |
 
 ### Keybindings
 
@@ -93,6 +93,7 @@ If you don't see syntax highlighting, ensure the parser is installed:
 ## 📸 Preview Features
 
 The live preview window includes a floating toolbar with:
+
 - **Zoom In/Out/Reset**: Navigate complex diagrams easily.
 - **Copy Image**: Renders a high-resolution PNG (3x scale) and copies it to your clipboard.
 - **Download SVG**: Save the vector diagram locally.
