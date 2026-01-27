@@ -1,5 +1,54 @@
 local M = {}
 
+local function pad_mermaid_tokens(line)
+  local tokens = {}
+  local function stash(pre, match, post)
+    table.insert(tokens, match)
+    return "\001" .. #tokens .. "\001"
+  end
+
+  -- Order matters! Longer/More specific patterns first.
+  -- We capture surrounding spaces to replace them with a single space.
+  local patterns = {
+    -- Sequence Diagram Arrows (multi-character heads first)
+    "%-%-%>%>",  -- -->> (Dotted arrow with head)
+    "%-%>%>",    -- ->> (Solid arrow with head)
+
+    -- Arrows with heads (Flowchart/Graph)
+    "%-%.%->",   -- -.->
+    "%-%-+>",    -- --> (Matches 2 or more dashes)
+    "%=+>",      -- ==>
+    "%-%>",      -- -> (Solid arrow in sequence, or short arrow)
+
+    -- Connectors without heads
+    "%-%.%-",    -- -.-
+    "%=%=+",     -- ===
+    "%-%-+",     -- ---
+
+    -- Special endings (Cross, Open Arrow)
+    "%-%-+x",    -- --x
+    "x%-%-+",    -- x--
+    "%-x",       -- -x (Sequence)
+    
+    "%-%-+o",    -- --o
+    "o%-%-+",    -- o--
+    
+    "%-%-+%)",   -- --)
+    "%-%)",      -- -)
+  }
+
+  for _, pat in ipairs(patterns) do
+    line = line:gsub("(%s*)(" .. pat .. ")(%s*)", stash)
+  end
+
+  -- Restore with exactly one space around
+  line = line:gsub("\001(%d+)\001", function(idx)
+    return " " .. tokens[tonumber(idx)] .. " "
+  end)
+
+  return line
+end
+
 function M.format()
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local formatted_lines = {}
@@ -57,6 +106,9 @@ function M.format()
     if trimmed == "" then
       table.insert(formatted_lines, "")
     else
+      -- Pad symbols
+      trimmed = pad_mermaid_tokens(trimmed)
+
       local current_adjust = 0
       
       -- Self-closing lines (e.g. `class A {}`) shouldn't change indent permanently or trigger dedent

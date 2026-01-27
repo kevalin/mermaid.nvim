@@ -1,6 +1,12 @@
 local M = {}
 local uv = vim.loop
 
+local function get_plugin_root()
+  local script_path = debug.getinfo(1, "S").source:sub(2)
+  return vim.fn.fnamemodify(script_path, ":h:h:h")
+end
+
+
 M.port = nil
 M.server = nil
 M.current_content = "graph TD\nA[Loading...]"
@@ -46,6 +52,27 @@ function M.start_server()
           elseif path == "/content" then
               response_body = M.current_content
               headers = headers .. "Content-Type: text/plain\r\n"
+          elseif path == "/svg-pan-zoom.min.js" then
+              local f = io.open(get_plugin_root() .. "/static/svg-pan-zoom.min.js", "rb")
+              if f then
+                  response_body = f:read("*a") or ""
+                  f:close()
+                  headers = headers .. "Content-Type: application/javascript\r\n"
+              else
+                  headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+                  response_body = "Not Found"
+              end
+          elseif path == "/mermaid.min.js" then
+              local f = io.open(get_plugin_root() .. "/static/mermaid.min.js", "rb")
+              if f then
+                  response_body = f:read("*a") or ""
+                  f:close()
+                  headers = headers .. "Content-Type: application/javascript\r\n"
+              else
+                  headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+                  response_body = "Not Found"
+              end
+
           else
               headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
               response_body = "Not Found"
@@ -100,7 +127,8 @@ function M.get_html_template()
     #toolbar button:hover { background: #f4f4f4; color: #000; }
     #toolbar button svg { width: 20px; height: 20px; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+  <script src="/svg-pan-zoom.min.js"></script>
+  <script src="/mermaid.min.js"></script>
 </head>
 <body>
   <div id="toolbar">
@@ -124,8 +152,9 @@ function M.get_html_template()
   <div class="mermaid" id="graph-container"></div>
   <div id="error-container"></div>
   
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  <div id="error-container"></div>
+  
+  <script>
     mermaid.initialize({ startOnLoad: false });
     
     let lastContent = "";
