@@ -1,0 +1,55 @@
+*mermaid.txt*    Mermaid diagram integration for Neovim
+
+==============================================================================
+CONTENTS                                                      *mermaid-contents*
+
+    1. Introduction.............................|mermaid-intro|
+    2. Setup....................................|mermaid-setup|
+    3. Commands.................................|mermaid-commands|
+    4. Mappings.................................|mermaid-mappings|
+
+==============================================================================
+1. INTRODUCTION                                                *mermaid-intro*
+
+mermaid.nvim is a plugin to help you write and preview Mermaid diagrams explicitly.
+It provides syntax highlighting (via TreeSitter, external dependency), formatting,
+and live preview.
+
+==============================================================================
+2. SETUP                                                       *mermaid-setup*
+
+To use the default configuration, simply run:
+
+    require("mermaid").setup()
+
+Or with options:
+
+    require("mermaid").setup({
+       -- options here
+    })
+
+==============================================================================
+3. COMMANDS                                                 *mermaid-commands*
+
+:MermaidFormat                                                *MermaidFormat*
+    Formats the current buffer using the built-in Mermaid formatter.
+    Features:
+    - Normalizes indentation (2 spaces by default)
+    - Pads tokens like arrows and relationships
+    - Handled indentation for subgraphs, classes, etc.
+
+:MermaidPreview                                              *MermaidPreview*
+    Generate a live preview of the current diagram (implementation dependent).
+
+==============================================================================
+4. MAPPINGS                                                 *mermaid-mappings*
+
+The plugin does not set up any default mappings. You can map the commands
+yourself:
+
+    vim.keymap.set('n', '<leader>mf', '<cmd>MermaidFormat<CR>', { desc = 'Format Mermaid' })
+    vim.keymap.set('n', '<leader>mp', '<cmd>MermaidPreview<CR>', { desc = 'Preview Mermaid' })
+
+==============================================================================
+termcap                                                              *termcap*
+vim:tw=78:ts=8:ft=help:norl:
