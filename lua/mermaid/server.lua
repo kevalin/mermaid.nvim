@@ -24,6 +24,12 @@ function M.start_server()
 
   M.server:listen(128, function(err)
     assert(not err, err)
+    
+    -- Start monitoring for idle timeout once we start listening
+    -- We assume client will connect shortly. 
+    -- If no client connects within 5s, it will shutdown, which is acceptable behavior.
+    M.start_monitoring()
+    
     local client = uv.new_tcp()
     M.server:accept(client)
     
@@ -41,6 +47,8 @@ function M.start_server()
       -- We assume GET requests
       if data_buffer:match("\r\n\r\n") then
           -- Request complete
+          M.last_access = os.time()  -- Reset idle timer
+          
           local method, path = data_buffer:match("^(%w+)%s+(%S+)%s+HTTP")
           
           local response_body = ""
@@ -90,13 +98,45 @@ function M.start_server()
   return M.port
 end
 
+M.last_access = os.time()
+M.monitor_timer = nil
+
+function M.start_monitoring()
+    if M.monitor_timer then return end
+    
+    M.monitor_timer = uv.new_timer()
+    -- Check every 2 seconds
+    M.monitor_timer:start(2000, 2000, vim.schedule_wrap(function()
+        -- If server stopped unexpectedly, cleanup timer
+        if not M.server then 
+            M.stop_server() 
+            return 
+        end
+        
+        local diff = os.time() - M.last_access
+        -- Timeout after 5 seconds of inactivity
+        -- (Client polls every 1s, so 5s means client is gone)
+        if diff > 5 then
+            vim.notify("Mermaid: Preview closed (idle timeout)", vim.log.levels.INFO)
+            M.stop_server()
+        end
+    end))
+end
+
 function M.stop_server()
+    if M.monitor_timer then
+        M.monitor_timer:stop()
+        M.monitor_timer:close()
+        M.monitor_timer = nil
+    end
+
     if M.server then
         M.server:close()
         M.server = nil
         M.port = nil
     end
 end
+
 
 function M.set_content(content)
     M.current_content = content

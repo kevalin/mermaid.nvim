@@ -32,15 +32,29 @@ function M.preview()
   vim.notify("Mermaid: Live Preview at " .. url, vim.log.levels.INFO)
 
   -- Open browser
-  if vim.ui.open then
+  local uname = vim.loop.os_uname().sysname
+  if uname == "Darwin" then
+      -- Force 'open' via shell on macOS to avoid Code -600 (LaunchServices) errors
+      -- that can happen with vim.ui.open or vim.fn.system in some envs.
+      os.execute("open '" .. url .. "'")
+  elseif vim.ui.open then
       vim.ui.open(url)
-  elseif vim.fn.has("mac") == 1 then
-      vim.fn.system({"open", url})
   elseif vim.fn.executable("xdg-open") == 1 then
       vim.fn.system({"xdg-open", url})
+  elseif vim.fn.executable("wslview") == 1 then
+      vim.fn.system({"wslview", url})
   else
       vim.notify("Could not open preview: no opener found", vim.log.levels.ERROR)
   end
+
+
+  -- Autocleanup on exit
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+      group = group,
+      callback = function()
+          server.stop_server()
+      end
+  })
 end
 
 return M
