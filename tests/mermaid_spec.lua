@@ -25,29 +25,7 @@ describe("mermaid.nvim", function()
   end)
 
   describe("formatting", function()
-    it("calls prettier when available", function()
-      -- Mock vim.fn.executable and vim.fn.system
-      local original_executable = vim.fn.executable
-      local original_system = vim.fn.system
-      
-      vim.fn.executable = function(cmd)
-        if cmd == "prettier" then return 1 end
-        return original_executable(cmd)
-      end
-      
-      local system_stub = stub(vim.fn, "system")
-      system_stub.returns("formatted code")
-      
-      -- Helper: put some lines
-      vim.api.nvim_buf_set_lines(0, 0, -1, false, {"original code"})
-      
-      require("mermaid.format").format()
-      
-      assert.stub(system_stub).was_called()
-      
-      -- Restore
-      vim.fn.executable = original_executable
-      system_stub:revert()
-    end)
+    -- Prettier support is replaced by internal Lua formatter
+    -- it("calls prettier when available", function() ... end)
   end)
 end)

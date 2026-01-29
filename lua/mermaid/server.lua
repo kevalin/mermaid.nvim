@@ -10,6 +10,22 @@ end
 M.port = nil
 M.server = nil
 M.current_content = "graph TD\nA[Loading...]"
+M.clients = {}
+
+function M.broadcast(content)
+    -- Format as SSE data: "data: <json_encoded_content>\n\n"
+    -- Only graph content changes usually.
+    -- We'll just send raw text line by line or json-encoded.
+    -- JSON is safer for newlines.
+    local safe_content = vim.fn.json_encode(content)
+    local message = "data: " .. safe_content .. "\n\n"
+    
+    for client, _ in pairs(M.clients) do
+        if not client:is_closing() then
+            client:write(message)
+        end
+    end
+end
 
 function M.start_server()
   if M.server then return M.port end
@@ -24,6 +40,12 @@ function M.start_server()
 
   M.server:listen(128, function(err)
     assert(not err, err)
+    
+    -- Start monitoring for idle timeout once we start listening
+    -- We assume client will connect shortly. 
+    -- If no client connects within 5s, it will shutdown, which is acceptable behavior.
+    M.start_monitoring()
+    
     local client = uv.new_tcp()
     M.server:accept(client)
     
@@ -41,8 +63,42 @@ function M.start_server()
       -- We assume GET requests
       if data_buffer:match("\r\n\r\n") then
           -- Request complete
+          M.last_access = os.time()  -- Reset idle timer
+          
           local method, path = data_buffer:match("^(%w+)%s+(%S+)%s+HTTP")
           
+          if path == "/events" then
+             -- SSE endpoint
+             -- E5560: Must schedule this because we use vim.fn.json_encode
+             vim.schedule(function()
+                 local headers = "HTTP/1.1 200 OK\r\n" ..
+                                 "Content-Type: text/event-stream\r\n" ..
+                                 "Cache-Control: no-cache\r\n" ..
+                                 "Connection: keep-alive\r\n\r\n"
+                 
+                 client:write(headers)
+                 
+                 -- Send initial content
+                 local safe_content = vim.fn.json_encode(M.current_content)
+                 client:write("data: " .. safe_content .. "\n\n")
+                 
+                 -- Add to clients list
+                 M.clients[client] = true
+                 
+                 -- Remove on close
+                 client:read_start(function(err, chunk)
+                     if err or not chunk then
+                         M.clients[client] = nil
+                         client:close()
+                     end
+                     -- Ignore incoming data on SSE connection
+                 end)
+             end)
+             
+             -- DO NOT close client here, it stays open
+             return
+          end
+
           local response_body = ""
           local headers = "HTTP/1.1 200 OK\r\nConnection: close\r\n"
           
@@ -50,6 +106,7 @@ function M.start_server()
               response_body = M.get_html_template()
               headers = headers .. "Content-Type: text/html\r\n"
           elseif path == "/content" then
+              -- Fallback for polling if needed, or initial load
               response_body = M.current_content
               headers = headers .. "Content-Type: text/plain\r\n"
           elseif path == "/svg-pan-zoom.min.js" then
@@ -90,7 +147,45 @@ function M.start_server()
   return M.port
 end
 
+M.monitor_timer = nil
+
+function M.start_monitoring()
+    if M.monitor_timer then return end
+    
+    local idle_since = nil
+    
+    M.monitor_timer = uv.new_timer()
+    -- Check every 2 seconds
+    M.monitor_timer:start(2000, 2000, vim.schedule_wrap(function()
+        -- If server stopped unexpectedly, cleanup timer
+        if not M.server then 
+            M.stop_server() 
+            return 
+        end
+        
+        local client_count = 0
+        for _, _ in pairs(M.clients) do client_count = client_count + 1 end
+        
+        if client_count == 0 then
+            if not idle_since then
+                idle_since = os.time()
+            elseif os.time() - idle_since > 5 then
+                vim.notify("Mermaid: Preview closed (no active clients)", vim.log.levels.INFO)
+                M.stop_server()
+            end
+        else
+            idle_since = nil
+        end
+    end))
+end
+
 function M.stop_server()
+    if M.monitor_timer then
+        M.monitor_timer:stop()
+        M.monitor_timer:close()
+        M.monitor_timer = nil
+    end
+
     if M.server then
         M.server:close()
         M.server = nil
@@ -98,8 +193,12 @@ function M.stop_server()
     end
 end
 
+
 function M.set_content(content)
-    M.current_content = content
+    if M.current_content ~= content then
+        M.current_content = content
+        M.broadcast(content)
+    end
 end
 
 function M.get_html_template()
@@ -318,19 +417,29 @@ function M.get_html_template()
         }
     }
 
-    async function poll() {
-        try {
-            const res = await fetch('/content');
-            const uniqueId = res.headers.get("X-Unique-ID");
-            const text = await res.text();
-            await renderGraph(text);
-        } catch (e) {
-            console.error("Polling error", e);
-        }
-        setTimeout(poll, 1000);
+    function setupSSE() {
+        const evtSource = new EventSource("/events");
+        
+        evtSource.onmessage = function(event) {
+            try {
+                // The server sends JSON encoded string in data
+                const content = JSON.parse(event.data);
+                renderGraph(content);
+            } catch (e) {
+                console.error("Parse error", e);
+            }
+        };
+        
+        evtSource.onerror = function(err) {
+            console.error("EventSource failed:", err);
+            // EventSource auto-reconnects usually.
+        };
+        
+        // Cleanup on unload to close connection explicitly?
+        // Browser usually handles this, closing socket which triggers server cleanup.
     }
     
-    poll();
+    setupSSE();
   </script>
 </body>
 </html>
