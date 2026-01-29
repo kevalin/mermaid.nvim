@@ -49,7 +49,7 @@ The default configuration works out of the box. You can customize standard optio
 ```lua
 require('mermaid').setup({
     format = {
-        shift_width = 2, -- Indentation size
+        shift_width = 4, -- Indentation size
     },
     lint = {
         enabled = true,  -- Enable usage of mmdc for checking errors

@@ -96,10 +96,13 @@ local function pad_mermaid_tokens(line)
 end
 
 function M.format()
+  local config = require("mermaid").config
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local formatted_lines = {}
   local indent_level = 0
-  local indent_size = vim.o.shiftwidth > 0 and vim.o.shiftwidth or 2
+  
+  local shift_width = (config.format and config.format.shift_width) or vim.o.shiftwidth
+  local indent_size = shift_width > 0 and shift_width or 4
   local indent_char = vim.o.expandtab and string.rep(" ", indent_size) or "\t"
 
   -- Regex helpers
