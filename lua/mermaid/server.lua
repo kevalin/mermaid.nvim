@@ -27,6 +27,25 @@ function M.broadcast(content)
     end
 end
 
+function M.get_beautiful_mermaid_root()
+    local cfg = require("mermaid").config.preview
+    if cfg.beautiful_mermaid_path then
+        return cfg.beautiful_mermaid_path
+    end
+
+    -- Try to auto-detect global path
+    local handle = io.popen("npm root -g")
+    if handle then
+        local result = handle:read("*a"):gsub("%s+", "")
+        handle:close()
+        local path = result .. "/beautiful-mermaid"
+        if vim.fn.isdirectory(path) == 1 then
+            return path
+        end
+    end
+    return nil
+end
+
 function M.start_server()
   if M.server then return M.port end
 
@@ -88,8 +107,8 @@ function M.start_server()
                  -- Remove on close
                  client:read_start(function(err, chunk)
                      if err or not chunk then
-                         M.clients[client] = nil
-                         client:close()
+                          M.clients[client] = nil
+                          client:close()
                      end
                      -- Ignore incoming data on SSE connection
                  end)
@@ -125,6 +144,42 @@ function M.start_server()
                   response_body = f:read("*a") or ""
                   f:close()
                   headers = headers .. "Content-Type: application/javascript\r\n"
+              else
+                  headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+                  response_body = "Not Found"
+              end
+          elseif path:match("^/lib/") then
+              local lib_root = M.get_beautiful_mermaid_root()
+              if lib_root then
+                  local subpath = path:sub(6) -- remove /lib/
+                  -- Security check: prevent directory traversal
+                  if subpath:match("%.%.") then
+                      headers = "HTTP/1.1 403 Forbidden\r\nConnection: close\r\n"
+                      response_body = "Forbidden"
+                  else
+                      local full_path = lib_root .. "/" .. subpath
+                      -- Special case for elkjs wrapper
+                      if subpath == "elkjs-wrapper.mjs" then
+                          headers = headers .. "Content-Type: application/javascript\r\n"
+                          response_body = "import '/lib/node_modules/elkjs/lib/elk.bundled.js';\nexport default window.ELK;"
+                      else
+                          local f = io.open(full_path, "rb")
+                          if f then
+                              response_body = f:read("*a") or ""
+                              f:close()
+                              if path:match("%.js$") or path:match("%.mjs$") then
+                                  headers = headers .. "Content-Type: application/javascript\r\n"
+                              elseif path:match("%.css$") then
+                                  headers = headers .. "Content-Type: text/css\r\n"
+                              else
+                                  headers = headers .. "Content-Type: application/octet-stream\r\n"
+                              end
+                          else
+                              headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+                              response_body = "Not Found"
+                          end
+                      end
+                  end
               else
                   headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
                   response_body = "Not Found"
@@ -202,12 +257,67 @@ function M.set_content(content)
 end
 
 function M.get_html_template()
+    local mermaid_config = require("mermaid").config
+    local renderer = mermaid_config.preview.renderer
+    local theme = mermaid_config.preview.theme
+
+    local scripts = ""
+    if (renderer == "beautiful-mermaid") then
+        local lib_root = M.get_beautiful_mermaid_root()
+        if lib_root then
+            scripts = [[
+  <script type="importmap">
+  {
+    "imports": {
+      "beautiful-mermaid": "/lib/dist/index.js",
+      "elkjs/lib/elk.bundled.js": "/lib/elkjs-wrapper.mjs",
+      "entities": "/lib/node_modules/entities/dist/esm/index.js"
+    }
+  }
+  </script>
+  <script type="module">
+    import { renderMermaidSVG, THEMES, DEFAULTS } from 'beautiful-mermaid';
+    window.renderMermaidSVG = renderMermaidSVG;
+    window.BEAUTIFUL_THEMES = THEMES;
+    window.BEAUTIFUL_DEFAULTS = DEFAULTS;
+    // Signal that the renderer is ready
+    window.rendererReady = true;
+    if (window.pendingContent) {
+        window.renderGraph(window.pendingContent);
+        window.pendingContent = null;
+    }
+  </script>]]
+        else
+            -- Fallback to CDN if local not found
+            scripts = [[
+  <script type="module">
+    import { renderMermaidSVG, THEMES, DEFAULTS } from 'https://esm.sh/beautiful-mermaid';
+    window.renderMermaidSVG = renderMermaidSVG;
+    window.BEAUTIFUL_THEMES = THEMES;
+    window.BEAUTIFUL_DEFAULTS = DEFAULTS;
+    // Signal that the renderer is ready
+    window.rendererReady = true;
+    if (window.pendingContent) {
+        window.renderGraph(window.pendingContent);
+        window.pendingContent = null;
+    }
+  </script>]]
+        end
+    else
+        scripts = [[
+  <script src="/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: ']] .. theme .. [[' });
+    window.rendererReady = true;
+  </script>]]
+    end
+
     return [[
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mermaid Live Preview</title>
+  <title>Mermaid Live Preview (]] .. renderer .. [[)</title>
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
     .mermaid { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: grab; }
@@ -227,7 +337,7 @@ function M.get_html_template()
     #toolbar button svg { width: 20px; height: 20px; }
   </style>
   <script src="/svg-pan-zoom.min.js"></script>
-  <script src="/mermaid.min.js"></script>
+]] .. scripts .. [[
 </head>
 <body>
   <div id="toolbar">
@@ -251,11 +361,10 @@ function M.get_html_template()
   <div class="mermaid" id="graph-container"></div>
   <div id="error-container"></div>
   
-  <div id="error-container"></div>
-  
   <script>
-    mermaid.initialize({ startOnLoad: false });
-    
+    const RENDERER = "]] .. renderer .. [[";
+    const THEME = "]] .. theme .. [[";
+
     let lastContent = "";
     let currentSVGCode = ""; // Store raw SVG for copying
     let panZoomInstance = null;
@@ -363,8 +472,13 @@ function M.get_html_template()
 
     async function renderGraph(content) {
         if (content === lastContent) return;
-        lastContent = content;
         
+        if (!window.rendererReady) {
+            window.pendingContent = content;
+            return;
+        }
+
+        lastContent = content;
         const container = document.getElementById('graph-container');
         const errorContainer = document.getElementById('error-container');
         
@@ -385,13 +499,27 @@ function M.get_html_template()
             // Check if content is empty
             if (!content.trim()) return;
 
-            const { svg } = await mermaid.render('mermaid-svg', content);
+            let res;
+            if (RENDERER === "beautiful-mermaid") {
+                let themeObj = (window.BEAUTIFUL_THEMES && window.BEAUTIFUL_THEMES[THEME]);
+                if (!themeObj && THEME === 'default') {
+                    themeObj = window.BEAUTIFUL_DEFAULTS;
+                }
+                if (!themeObj) {
+                    themeObj = (window.BEAUTIFUL_THEMES && window.BEAUTIFUL_THEMES['zinc-light']) || {};
+                }
+                console.log("Rendering with beautiful-mermaid theme:", THEME, themeObj);
+                res = renderMermaidSVG(content, { ...themeObj });
+            } else {
+                res = await mermaid.render('mermaid-svg', content);
+            }
+            const svg = typeof res === 'string' ? res : res.svg;
+
             currentSVGCode = svg; // Cache the clean SVG
             container.innerHTML = svg;
             
             const svgEl = container.querySelector('svg');
             if (svgEl) {
-                svgEl.style.cssText = "";
                 svgEl.style.width = "100%";
                 svgEl.style.height = "100%";
                 
@@ -416,6 +544,9 @@ function M.get_html_template()
             errorContainer.style.display = 'block';
         }
     }
+    
+    // Register renderGraph globally for ESM access
+    window.renderGraph = renderGraph;
 
     function setupSSE() {
         const evtSource = new EventSource("/events");
@@ -434,9 +565,6 @@ function M.get_html_template()
             console.error("EventSource failed:", err);
             // EventSource auto-reconnects usually.
         };
-        
-        // Cleanup on unload to close connection explicitly?
-        // Browser usually handles this, closing socket which triggers server cleanup.
     }
     
     setupSSE();
