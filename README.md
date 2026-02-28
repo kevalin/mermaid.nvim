@@ -81,6 +81,17 @@ npm install -g beautiful-mermaid
 
 The plugin will auto-detect your global installation. It works entirely offline and uses a local "Import Map" to resolve dependencies.
 
+#### Supported Themes
+- `default` (Zinc-Light)
+- `zinc-light`, `zinc-dark`
+- `tokyo-night`, `tokyo-night-storm`, `tokyo-night-light`
+- `catppuccin-mocha`, `catppuccin-latte`
+- `nord`, `nord-light`
+- `dracula`
+- `github-light`, `github-dark`
+- `solarized-light`, `solarized-dark`
+- `one-dark`
+
 ## 🚀 Usage
 
 ### Commands
