@@ -134,11 +134,14 @@ The live preview window includes a floating toolbar with:
 - **Copy Image**: Renders a high-resolution PNG (3x scale) and copies it to your clipboard.
 - **Download SVG**: Save the vector diagram locally.
 
-## ❤️ Credits
+## ❤️ Credits & Contributors
 
 - [mermaid.js](https://mermaid.js.org/)
 - [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid)
 - [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom)
+
+### Special Thanks
+- **Gemini (Google DeepMind)**: Served as a core collaborator for refactoring the preview system, and enhancing SSE connection stability.
 
 ## 🤝 Contributing
 
