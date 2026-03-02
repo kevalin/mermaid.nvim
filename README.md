@@ -8,7 +8,7 @@ A feature-rich Neovim plugin for working with [Mermaid](https://mermaid.js.org/)
 
 - **Syntax Highlighting**: Relies on [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (official support).
 - **Live Preview**:
-  - **Multiple Renderers**: Choose between standard `mermaid.js` and the ultra-fast, premium-styled `beautiful-mermaid`.
+  - **Multiple Renderers**: Choose between standard `mermaid.js` and the aesthetic-focused `beautiful-mermaid`.
   - **Real-time**: Diagram updates instantly as you type.
   - **Interactive**: Pan and Zoom support (with `svg-pan-zoom`).
   - **Toolbar**: Custom controls for Zoom, Reset, **Copy Image (PNG)**, and Downloading SVG.
@@ -59,7 +59,6 @@ require('mermaid').setup({
     preview = {
         renderer = "mermaid.js", -- "mermaid.js" (default) or "beautiful-mermaid"
         theme = "default",       -- Theme name (renderer-specific)
-        -- beautiful_mermaid_path = "/path/to/node_modules/beautiful-mermaid", -- Auto-detected if global
     }
 })
 ```
@@ -68,22 +67,24 @@ require('mermaid').setup({
 
 | Renderer | Description |
 | :--- | :--- |
-| `mermaid.js` | Official Mermaid.js renderer. Reliable, standard look. |
-| `beautiful-mermaid` | Ultra-fast, zero-DOM renderer with premium aesthetics. Supports modern themes like `tokyo-night`. |
+| `mermaid.js` | Official Mermaid.js renderer. Most reliable, supports all standard syntax including icons and edge labels. |
+| `beautiful-mermaid` | Lightweight, aesthetic-focused renderer. Uses [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid) for premium-styled SVGs. |
 
-### Using beautiful-mermaid
+### Renderer Comparison
 
-If you prefer a more modern aesthetic, install `beautiful-mermaid` globally:
+#### beautiful-mermaid (Modern/Premium)
+Designed for high-quality, modern-looking diagrams.
+![beautiful-mermaid example](media/preview-beautiful.png)
 
-```bash
-npm install -g beautiful-mermaid
-```
+> [!NOTE]
+> `beautiful-mermaid` uses a simplified parser. For complex diagrams involving **Font Awesome icons** or **edge labels** (e.g., `A --> |label| B`), please use the official `mermaid.js` renderer.
 
-The plugin will auto-detect your global installation. It works entirely offline and uses a local "Import Map" to resolve dependencies.
+#### mermaid.js (Standard/Full-featured)
+Supports the full Mermaid specification.
+![mermaid.js example](media/preview-mermaid.png)
 
-#### Supported Themes
-- `default` (Zinc-Light)
-- `zinc-light`, `zinc-dark`
+### Supported Themes (beautiful-mermaid)
+- `zinc-light` (default), `zinc-dark`
 - `tokyo-night`, `tokyo-night-storm`, `tokyo-night-light`
 - `catppuccin-mocha`, `catppuccin-latte`
 - `nord`, `nord-light`
@@ -128,14 +129,16 @@ If you don't see syntax highlighting, ensure the parser is installed:
 
 The live preview window includes a floating toolbar with:
 
+- **Connect Stability**: Automatic SSE reconnection and optimized CDN loading (via `esm.sh`) for a smooth experience.
 - **Zoom In/Out/Reset**: Navigate complex diagrams easily.
 - **Copy Image**: Renders a high-resolution PNG (3x scale) and copies it to your clipboard.
 - **Download SVG**: Save the vector diagram locally.
 
 ## ❤️ Credits
 
-- [mermaid.js](https://mermaid.js.org/): Generation of diagrams like flowcharts or sequence diagrams from text in a similar manner as markdown.
-- [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid): Render Mermaid diagrams as beautiful SVGs or ASCII art.
+- [mermaid.js](https://mermaid.js.org/)
+- [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid)
+- [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom)
 
 ## 🤝 Contributing
 

@@ -27,24 +27,7 @@ function M.broadcast(content)
     end
 end
 
-function M.get_beautiful_mermaid_root()
-    local cfg = require("mermaid").config.preview
-    if cfg.beautiful_mermaid_path then
-        return cfg.beautiful_mermaid_path
-    end
-
-    -- Try to auto-detect global path
-    local handle = io.popen("npm root -g")
-    if handle then
-        local result = handle:read("*a"):gsub("%s+", "")
-        handle:close()
-        local path = result .. "/beautiful-mermaid"
-        if vim.fn.isdirectory(path) == 1 then
-            return path
-        end
-    end
-    return nil
-end
+-- Removed get_beautiful_mermaid_root as we now use CDN for all dependencies
 
 function M.start_server()
   if M.server then return M.port end
@@ -103,12 +86,18 @@ function M.start_server()
                  
                  -- Add to clients list
                  M.clients[client] = true
+                 vim.schedule(function()
+                    vim.notify("Mermaid: SSE Client connected", vim.log.levels.DEBUG)
+                 end)
                  
                  -- Remove on close
                  client:read_start(function(err, chunk)
                      if err or not chunk then
                           M.clients[client] = nil
                           client:close()
+                          vim.schedule(function()
+                             vim.notify("Mermaid: SSE Client disconnected", vim.log.levels.DEBUG)
+                          end)
                      end
                      -- Ignore incoming data on SSE connection
                  end)
@@ -128,66 +117,27 @@ function M.start_server()
               -- Fallback for polling if needed, or initial load
               response_body = M.current_content
               headers = headers .. "Content-Type: text/plain\r\n"
-          elseif path == "/svg-pan-zoom.min.js" then
-              local f = io.open(get_plugin_root() .. "/static/svg-pan-zoom.min.js", "rb")
+          else
+              -- Static files catch-all (index.html, CSS, and our own JS)
+              local filename = path:sub(2)
+              if filename == "" then filename = "index.html" end
+              local f = io.open(get_plugin_root() .. "/static/" .. filename, "rb")
               if f then
                   response_body = f:read("*a") or ""
                   f:close()
-                  headers = headers .. "Content-Type: application/javascript\r\n"
-              else
-                  headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
-                  response_body = "Not Found"
-              end
-          elseif path == "/mermaid.min.js" then
-              local f = io.open(get_plugin_root() .. "/static/mermaid.min.js", "rb")
-              if f then
-                  response_body = f:read("*a") or ""
-                  f:close()
-                  headers = headers .. "Content-Type: application/javascript\r\n"
-              else
-                  headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
-                  response_body = "Not Found"
-              end
-          elseif path:match("^/lib/") then
-              local lib_root = M.get_beautiful_mermaid_root()
-              if lib_root then
-                  local subpath = path:sub(6) -- remove /lib/
-                  -- Security check: prevent directory traversal
-                  if subpath:match("%.%.") then
-                      headers = "HTTP/1.1 403 Forbidden\r\nConnection: close\r\n"
-                      response_body = "Forbidden"
+                  if filename:match("%.js$") or filename:match("%.mjs$") then
+                      headers = headers .. "Content-Type: application/javascript\r\n"
+                  elseif filename:match("%.css$") then
+                      headers = headers .. "Content-Type: text/css\r\n"
+                  elseif filename:match("%.html$") then
+                      headers = headers .. "Content-Type: text/html\r\n"
                   else
-                      local full_path = lib_root .. "/" .. subpath
-                      -- Special case for elkjs wrapper
-                      if subpath == "elkjs-wrapper.mjs" then
-                          headers = headers .. "Content-Type: application/javascript\r\n"
-                          response_body = "import '/lib/node_modules/elkjs/lib/elk.bundled.js';\nexport default window.ELK;"
-                      else
-                          local f = io.open(full_path, "rb")
-                          if f then
-                              response_body = f:read("*a") or ""
-                              f:close()
-                              if path:match("%.js$") or path:match("%.mjs$") then
-                                  headers = headers .. "Content-Type: application/javascript\r\n"
-                              elseif path:match("%.css$") then
-                                  headers = headers .. "Content-Type: text/css\r\n"
-                              else
-                                  headers = headers .. "Content-Type: application/octet-stream\r\n"
-                              end
-                          else
-                              headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
-                              response_body = "Not Found"
-                          end
-                      end
+                      headers = headers .. "Content-Type: application/octet-stream\r\n"
                   end
               else
                   headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
                   response_body = "Not Found"
               end
-
-          else
-              headers = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
-              response_body = "Not Found"
           end
           
           headers = headers .. "Content-Length: " .. #response_body .. "\r\n\r\n"
@@ -224,7 +174,7 @@ function M.start_monitoring()
         if client_count == 0 then
             if not idle_since then
                 idle_since = os.time()
-            elseif os.time() - idle_since > 5 then
+            elseif os.time() - idle_since > 20 then
                 vim.notify("Mermaid: Preview closed (no active clients)", vim.log.levels.INFO)
                 M.stop_server()
             end
@@ -263,315 +213,35 @@ function M.get_html_template()
 
     local scripts = ""
     if (renderer == "beautiful-mermaid") then
-        local lib_root = M.get_beautiful_mermaid_root()
-        if lib_root then
-            scripts = [[
-  <script type="importmap">
-  {
-    "imports": {
-      "beautiful-mermaid": "/lib/dist/index.js",
-      "elkjs/lib/elk.bundled.js": "/lib/elkjs-wrapper.mjs",
-      "entities": "/lib/node_modules/entities/dist/esm/index.js"
-    }
-  }
-  </script>
+        scripts = [[
   <script type="module">
-    import { renderMermaidSVG, THEMES, DEFAULTS } from 'beautiful-mermaid';
+    import { renderMermaidSVG, THEMES, DEFAULTS } from 'https://esm.sh/beautiful-mermaid@1.1.3?exports=renderMermaidSVG,THEMES,DEFAULTS';
     window.renderMermaidSVG = renderMermaidSVG;
     window.BEAUTIFUL_THEMES = THEMES;
     window.BEAUTIFUL_DEFAULTS = DEFAULTS;
-    // Signal that the renderer is ready
     window.rendererReady = true;
-    if (window.pendingContent) {
-        window.renderGraph(window.pendingContent);
-        window.pendingContent = null;
-    }
   </script>]]
-        else
-            -- Fallback to CDN if local not found
-            scripts = [[
-  <script type="module">
-    import { renderMermaidSVG, THEMES, DEFAULTS } from 'https://esm.sh/beautiful-mermaid';
-    window.renderMermaidSVG = renderMermaidSVG;
-    window.BEAUTIFUL_THEMES = THEMES;
-    window.BEAUTIFUL_DEFAULTS = DEFAULTS;
-    // Signal that the renderer is ready
-    window.rendererReady = true;
-    if (window.pendingContent) {
-        window.renderGraph(window.pendingContent);
-        window.pendingContent = null;
-    }
-  </script>]]
-        end
     else
         scripts = [[
-  <script src="/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({ startOnLoad: false, theme: ']] .. theme .. [[' });
-    window.rendererReady = true;
+    window.addEventListener('load', () => {
+        mermaid.initialize({ startOnLoad: false, theme: ']] .. theme .. [[' });
+        window.rendererReady = true;
+    });
   </script>]]
     end
 
-    return [[
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Mermaid Live Preview (]] .. renderer .. [[)</title>
-  <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
-    .mermaid { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: grab; }
-    .mermaid:active { cursor: grabbing; }
-    #error-container { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,0,0,0.8); color: white; padding: 10px; display: none; font-family: monospace; }
-    /* Toolbar styled like typical map/zoom controls */
-    #toolbar { position: absolute; bottom: 20px; left: 20px; display: flex; flex-direction: column; gap: 5px; z-index: 100; }
-    #toolbar button { 
-        width: 32px; height: 32px; 
-        background: white; border: 1px solid #ccc; border-radius: 4px; 
-        cursor: pointer; padding: 5px; 
-        display: flex; justify-content: center; align-items: center; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
-        color: #333;
-    }
-    #toolbar button:hover { background: #f4f4f4; color: #000; }
-    #toolbar button svg { width: 20px; height: 20px; }
-  </style>
-  <script src="/svg-pan-zoom.min.js"></script>
-]] .. scripts .. [[
-</head>
-<body>
-  <div id="toolbar">
-    <button id="btn-zoom-in" title="Zoom In">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14m-1-1.5v-2h-2v-2h2v-2h2v2h2v2h-2v2z"/></svg>
-    </button>
-    <button id="btn-zoom-out" title="Zoom Out">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="m19.6 21l-6.3-6.3q-.75.6-1.725.95T9.5 16q-2.725 0-4.612-1.888T3 9.5t1.888-4.612T9.5 3t4.613 1.888T16 9.5q0 1.1-.35 2.075T14.7 13.3l6.3 6.3zM9.5 14q1.875 0 3.188-1.312T14 9.5t-1.312-3.187T9.5 5T6.313 6.313T5 9.5t1.313 3.188T9.5 14M7 10.5v-2h5v2z"/></svg>
-    </button>
-    <button id="btn-reset" title="Reset View">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20q-3.35 0-5.675-2.325T4 12t2.325-5.675T12 4q1.725 0 3.3.712T18 6.75V4h2v7h-7V9h4.2q-.8-1.4-2.187-2.2T12 6Q9.5 6 7.75 7.75T6 12t1.75 4.25T12 18q1.925 0 3.475-1.1T17.65 14h2.1q-.7 2.65-2.85 4.325T12 20"/></svg>
-    </button>
-    <div style="height: 1px; background: #ccc; margin: 2px 0;"></div>
-    <button id="btn-copy" title="Copy Image (PNG)">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18q-.825 0-1.412-.587T7 16V4q0-.825.588-1.412T9 2h9q.825 0 1.413.588T20 4v12q0 .825-.587 1.413T18 18zm-4 4q-.825 0-1.412-.587T3 20V6h2v14h11v2z"/></svg>
-    </button>
-    <button id="btn-download" title="Download SVG">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 16l-5-5l1.4-1.45l2.6 2.6V4h2v8.15l2.6-2.6L17 11zm-6 4q-.825 0-1.412-.587T4 18v-3h2v3h12v-3h2v3q0 .825-.587 1.413T18 20z"/></svg>
-    </button>
-  </div>
-  <div class="mermaid" id="graph-container"></div>
-  <div id="error-container"></div>
-  
-  <script>
-    const RENDERER = "]] .. renderer .. [[";
-    const THEME = "]] .. theme .. [[";
+    local f = io.open(get_plugin_root() .. "/static/index.html", "r")
+    if not f then return "Error: static/index.html not found" end
+    local template = f:read("*a")
+    f:close()
 
-    let lastContent = "";
-    let currentSVGCode = ""; // Store raw SVG for copying
-    let panZoomInstance = null;
-    let panState = null;
+    template = template:gsub("{{RENDERER}}", renderer)
+    template = template:gsub("{{THEME}}", theme)
+    template = template:gsub("{{SCRIPTS}}", scripts)
 
-    // --- Button Logic ---
-
-    // Zoom Controls
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        if (panZoomInstance) panZoomInstance.zoomIn();
-    });
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        if (panZoomInstance) panZoomInstance.zoomOut();
-    });
-    document.getElementById('btn-reset').addEventListener('click', () => {
-        if (panZoomInstance) {
-            panZoomInstance.resetZoom();
-            panZoomInstance.resetPan();
-        }
-    });
-
-    // Convert SVG string to PNG Blob and copy to clipboard
-    document.getElementById('btn-copy').addEventListener('click', () => {
-        if (!currentSVGCode) return;
-        
-        // Parse SVG to get dimensions from viewBox
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(currentSVGCode, "image/svg+xml");
-        const svgElement = doc.documentElement;
-        
-        let width = 0;
-        let height = 0;
-        
-        if (svgElement.hasAttribute('viewBox')) {
-            const viewBox = svgElement.getAttribute('viewBox').split(/\s+|,/).map(parseFloat);
-            width = viewBox[2];
-            height = viewBox[3];
-        } else {
-            // Fallback if no viewBox (unlikely for mermaid)
-            width = parseFloat(svgElement.getAttribute('width')) || 800;
-            height = parseFloat(svgElement.getAttribute('height')) || 600;
-        }
-
-        // define High-Res scale
-        const scale = 3;
-        const finalWidth = Math.ceil(width * scale);
-        const finalHeight = Math.ceil(height * scale);
-        
-        // Force dimensions on the SVG source before creating blob
-        svgElement.setAttribute('width', finalWidth);
-        svgElement.setAttribute('height', finalHeight);
-        
-        const serializer = new XMLSerializer();
-        const highResSVG = serializer.serializeToString(svgElement);
-
-        const img = new Image();
-        const svgBlob = new Blob([highResSVG], {type: "image/svg+xml;charset=utf-8"});
-        const url = URL.createObjectURL(svgBlob);
-        
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = finalWidth;
-            canvas.height = finalHeight;
-            
-            const ctx = canvas.getContext('2d');
-            // Fill white background (optional, but good for PNG)
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
-            
-            canvas.toBlob(async (blob) => {
-                try {
-                    await navigator.clipboard.write([
-                        new ClipboardItem({ 'image/png': blob })
-                    ]);
-                    
-                    const btn = document.getElementById('btn-copy');
-                    btn.style.color = "green";
-                    setTimeout(() => btn.style.color = "", 1000);
-                } catch (err) {
-                    console.error('Failed to write to clipboard', err);
-                    alert('Failed to copy image to clipboard');
-                }
-                URL.revokeObjectURL(url);
-            }, 'image/png');
-        };
-        img.src = url;
-    });
-
-    document.getElementById('btn-download').addEventListener('click', () => {
-        // Use currentSVGCode for pure download as well
-        if (!currentSVGCode) return;
-
-        const blob = new Blob([currentSVGCode], {type: "image/svg+xml;charset=utf-8"});
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "mermaid-diagram.svg";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    });
-
-    async function renderGraph(content) {
-        if (content === lastContent) return;
-        
-        if (!window.rendererReady) {
-            window.pendingContent = content;
-            return;
-        }
-
-        lastContent = content;
-        const container = document.getElementById('graph-container');
-        const errorContainer = document.getElementById('error-container');
-        
-        try {
-            // Save pan/zoom state if exists
-            if (panZoomInstance) {
-                panState = {
-                    zoom: panZoomInstance.getZoom(),
-                    pan: panZoomInstance.getPan()
-                };
-                panZoomInstance.destroy();
-                panZoomInstance = null;
-            }
-
-            container.innerHTML = "";
-            errorContainer.style.display = 'none';
-
-            // Check if content is empty
-            if (!content.trim()) return;
-
-            let res;
-            if (RENDERER === "beautiful-mermaid") {
-                let themeObj = (window.BEAUTIFUL_THEMES && window.BEAUTIFUL_THEMES[THEME]);
-                if (!themeObj && THEME === 'default') {
-                    themeObj = window.BEAUTIFUL_DEFAULTS;
-                }
-                if (!themeObj) {
-                    themeObj = (window.BEAUTIFUL_THEMES && window.BEAUTIFUL_THEMES['zinc-light']) || {};
-                }
-                console.log("Rendering with beautiful-mermaid theme:", THEME, themeObj);
-                res = renderMermaidSVG(content, { ...themeObj });
-            } else {
-                res = await mermaid.render('mermaid-svg', content);
-            }
-            const svg = typeof res === 'string' ? res : res.svg;
-
-            currentSVGCode = svg; // Cache the clean SVG
-            container.innerHTML = svg;
-            
-            const svgEl = container.querySelector('svg');
-            if (svgEl) {
-                svgEl.style.width = "100%";
-                svgEl.style.height = "100%";
-                
-                panZoomInstance = svgPanZoom(svgEl, {
-                  zoomEnabled: true,
-                  controlIconsEnabled: false, // Disable default icons
-                  fit: true,
-                  center: true,
-                  minZoom: 0.1,
-                  maxZoom: 10
-                });
-
-                // Restore state if available
-                if (panState) {
-                    panZoomInstance.zoom(panState.zoom);
-                    panZoomInstance.pan(panState.pan);
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            errorContainer.textContent = e.toString();
-            errorContainer.style.display = 'block';
-        }
-    }
-    
-    // Register renderGraph globally for ESM access
-    window.renderGraph = renderGraph;
-
-    function setupSSE() {
-        const evtSource = new EventSource("/events");
-        
-        evtSource.onmessage = function(event) {
-            try {
-                // The server sends JSON encoded string in data
-                const content = JSON.parse(event.data);
-                renderGraph(content);
-            } catch (e) {
-                console.error("Parse error", e);
-            }
-        };
-        
-        evtSource.onerror = function(err) {
-            console.error("EventSource failed:", err);
-            // EventSource auto-reconnects usually.
-        };
-    }
-    
-    setupSSE();
-  </script>
-</body>
-</html>
-]]
+    return template
 end
 
 return M
