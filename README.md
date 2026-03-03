@@ -73,7 +73,7 @@ require('mermaid').setup({
 ### Renderer Comparison
 
 Original mermaid code:
-```mermaid
+```
 flowchart TD
   A(Start) --> B{Is it sunny?}
   B -- Yes --> C[Go to the park]
