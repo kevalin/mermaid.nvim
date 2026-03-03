@@ -72,6 +72,16 @@ require('mermaid').setup({
 
 ### Renderer Comparison
 
+Original mermaid code:
+```mermaid
+flowchart TD
+  A(Start) --> B{Is it sunny?}
+  B -- Yes --> C[Go to the park]
+  B -- No --> D[Stay indoors]
+  C --> E[Finish]
+  D --> E
+```
+
 #### beautiful-mermaid (Modern/Premium)
 Designed for high-quality, modern-looking diagrams.
 ![beautiful-mermaid example](media/preview-beautiful.png)
