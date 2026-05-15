@@ -12,50 +12,44 @@ local SKIP_MARKER = "-- mermaid-format-ignore"
 ------------------------------------------------------------------------------
 
 --- Mask Mermaid comments (%% to end of line), single-quoted strings,
---- and double-quoted strings before token padding, then restore.
+--- double-quoted strings, AND %%{init} directives before token padding.
+--- Directives are kept masked through the padding step and only restored
+--- by the returned unmask function (prevents `:` inside directives from being padded).
 local function mask_ignored(line)
-  local masked = { _str = {}, _quote = {}, _comment = {} }
+  local masked = { _str = {}, _quote = {}, _comment = {}, _directive = {} }
 
-  -- 1) Mask %% comments (from %% to end of line, but NOT %%{ ... }%% directives)
+  -- 1) Mask %%{...}%% directives FIRST (highest priority)
+  local function protect_directive(s)
+    table.insert(masked._directive, s)
+    return "\x04" .. #masked._directive .. "\x04"
+  end
+  masked._str = line:gsub("%%{.-}%%", protect_directive)
+
+  -- 2) Mask bare %% comments (from %% to end of line)
   local function mask_comment(s)
     table.insert(masked._comment, s)
     return "\x03" .. #masked._comment .. "\x03"
   end
-  -- Directives like %%{init}%% should NOT be treated as comments.
-  -- Strategy: first protect directive patterns, then mask remaining %%
-  local protected = {}
-  local function protect_directive(s)
-    table.insert(protected, s)
-    return "\x04" .. #protected .. "\x04"
-  end
-  -- Temporarily protect directive braces so %% inside %%{...}%% isn't matched
-  masked._str = line:gsub("%%{.-}%%", protect_directive)
-  -- Now mask bare %% comments
   masked._str = masked._str:gsub("%%%%[^\n]*", mask_comment)
-  -- Restore directives
-  masked._str = masked._str:gsub("\x04(%d+)\x04", function(idx)
-    return protected[tonumber(idx)]
-  end)
 
-  -- 2) Mask single-quoted strings
-  masked._str = masked._str:gsub("'[^']*'", function(s)
+  -- 3) Mask single and double-quoted strings
+  local function mask_quote(s)
     table.insert(masked._quote, s)
     return "\x02" .. #masked._quote .. "\x02"
-  end)
+  end
+  masked._str = masked._str:gsub("'[^']*'", mask_quote)
+  masked._str = masked._str:gsub('"[^"]*"', mask_quote)
 
-  -- 3) Mask double-quoted strings (already handled in original code but re-mask)
-  masked._str = masked._str:gsub('"[^"]*"', function(s)
-    table.insert(masked._quote, s)
-    return "\x02" .. #masked._quote .. "\x02"
-  end)
-
-  -- Unmask function for final restore
+  -- Unmask function for final restore AFTER padding
   local function unmask(s)
     s = s:gsub("\x02(%d+)\x02", function(idx)
       return masked._quote[tonumber(idx)]
     end)
     s = s:gsub("\x03(%d+)\x03", function(idx)
       return masked._comment[tonumber(idx)]
+    end)
+    s = s:gsub("\x04(%d+)\x04", function(idx)
+      return masked._directive[tonumber(idx)]
     end)
     return s
   end

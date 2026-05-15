@@ -1,7 +1,7 @@
 -- luacheck configuration for mermaid.nvim
 -- https://github.com/lunarmodules/luacheck
 
-std = "lua51+ngx"
+std = "lua51"
 globals = { "vim" }
 
 -- Neovim-specific globals (no warning on these)

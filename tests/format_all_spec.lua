@@ -6,6 +6,8 @@ describe("mermaid format — all diagram types", function()
 
   before_each(function()
     require("mermaid").setup({ format = { shift_width = 2 } })
+    vim.o.expandtab = true
+    vim.o.shiftwidth = 2
   end)
 
   local function format_text(input_lines)
@@ -260,8 +262,10 @@ describe("mermaid format — all diagram types", function()
 
   describe("edge cases", function()
     it("handles empty file", function()
+      -- An empty Neovim buffer always contains 1 empty line
       local result = format_text({})
-      assert.are.same(0, #result)
+      assert.are.same(1, #result)
+      assert.are.same("", result[1])
     end)
 
     it("handles blank lines between blocks", function()
