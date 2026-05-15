@@ -120,6 +120,7 @@ local function pad_mermaid_tokens(line)
     -- Thin arrows (single dash - after multi-char to avoid greed)
     "%-%>",          -- ->
     "%-x",           -- -x
+    "%-%)",          -- -)
 
     -- Thick links
     "%=%=%>",        -- ==>
@@ -260,10 +261,10 @@ function M.format()
 
     if trimmed == "" then
       table.insert(formatted_lines, "")
-    elseif trimmed:match("^" .. vim.pesc(SKIP_MARKER)) or trimmed:match("^" .. vim.pesc(SKIP_MARKER:lower())) then
-      -- Skip marker: keep original line as-is (no indent, no padding)
+    elseif trimmed:match("^" .. vim.pesc(SKIP_MARKER)) or trimmed:lower():match("^" .. vim.pesc(SKIP_MARKER)) then
+      -- Skip marker at line start: keep original line as-is (no indent, no padding)
       table.insert(formatted_lines, line)
-    elseif line:match(vim.pesc(SKIP_MARKER)) or line:match(vim.pesc(SKIP_MARKER:lower())) then
+    elseif line:lower():match(vim.pesc(SKIP_MARKER)) then
       -- Inline skip marker: keep original line as-is
       table.insert(formatted_lines, line)
     else

@@ -33,7 +33,6 @@ local function refresh()
   local status = server.server and "connected" or "stopped"
   local status_sym = STATUS_SYMBOLS[status] or "?"
 
-  -- Build panel text
   local lines = {
     "  🧜 Mermaid Preview",
     "",
@@ -46,7 +45,13 @@ local function refresh()
     "  [o] Open browser  [c] Copy URL  [q] Close",
   }
 
+  -- Temporarily allow modification for buffer updates
+  local was_modifiable = vim.api.nvim_buf_get_option(buf, "modifiable")
+  vim.api.nvim_buf_set_option(buf, "modifiable", true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  if not was_modifiable then
+    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+  end
 
   -- Highlight header
   vim.api.nvim_buf_clear_namespace(buf, namespace, 0, -1)
