@@ -136,7 +136,7 @@ describe("mermaid server", function()
       server.set_theme_mode("dark")
       local html = server.get_html_template()
       assert.is_not_nil(html)
-      assert.is_true(html:find('data-theme="dark"') ~= nil,
+      assert.is_true(html:find('data%-theme="dark"') ~= nil,
         "HTML should contain data-theme attribute for dark mode")
     end)
   end)

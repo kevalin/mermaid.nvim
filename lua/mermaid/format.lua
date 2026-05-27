@@ -90,15 +90,7 @@ local function pad_mermaid_tokens(line)
     "%-%-%+",        -- --+
     "%-%-%-",        -- ---
 
-    -- Arrow ends
-    "%-%-x",         -- --x
-    "x%-%-",         -- x--
-    "%-%-%o",        -- --o
-    "o%-%-",         -- o--
-    "%-%-%)",        -- --)
-    "%-%-",          -- -- (Link)
-
-    -- Class Diagram Relationships (multi-char, no bare x-/o- to avoid word matches)
+    -- Class Diagram Relationships (must be before bare -- to avoid splitting)
     "%<|%-%-",       -- <|-- (Inheritance)
     "%*%-%-",        -- *-- (Composition)
     "o%-%-",         -- o-- (Aggregation)
@@ -111,6 +103,14 @@ local function pad_mermaid_tokens(line)
     "%.%.|%>",       -- ..|>
     "%.%.%*",        -- ..*
     "%.%.o",         -- ..o
+
+    -- Arrow ends
+    "%-%-x",         -- --x
+    "x%-%-",         -- x--
+    "%-%-%o",        -- --o
+    "o%-%-",         -- o--
+    "%-%-%)",        -- --)
+    "%-%-",          -- -- (Link)
 
     -- Multi-char thin arrows (must be before single-char)
     "%-%>%>",        -- ->>

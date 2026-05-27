@@ -1,30 +1,31 @@
 -- Tests for the panel module
 describe("mermaid panel", function()
   local panel
+  local orig_list_uis
 
   before_each(function()
     panel = require("mermaid.panel")
+    -- Mock nvim_list_uis for headless test environment
+    orig_list_uis = vim.api.nvim_list_uis
+    vim.api.nvim_list_uis = function()
+      return { { width = 120, height = 40 } }
+    end
     -- Ensure clean state
     panel.close()
   end)
 
   after_each(function()
     panel.close()
+    -- Restore original
+    if orig_list_uis then
+      vim.api.nvim_list_uis = orig_list_uis
+    end
   end)
 
   describe("open/close", function()
     it("opens a floating window", function()
-      -- Mock ui dimensions
-      local orig_list_uis = vim.api.nvim_list_uis
-      vim.api.nvim_list_uis = function()
-        return { { width = 120, height = 40 } }
-      end
-
       panel.open("http://localhost:8080")
       assert.is_true(panel.is_open())
-
-      -- Restore
-      vim.api.nvim_list_uis = orig_list_uis
     end)
 
     it("closes the floating window", function()
