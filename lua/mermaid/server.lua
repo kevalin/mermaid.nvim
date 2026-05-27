@@ -227,8 +227,8 @@ function M.start_server()
       if not client:is_closing() then client:close() end
     end)
 
-    client:read_start(function(err, chunk)
-      if err or not chunk then
+    client:read_start(function(read_err, chunk)
+      if read_err or not chunk then
         if not req_timer:is_closing() then req_timer:close() end
         if not client:is_closing() then client:close() end
         return
