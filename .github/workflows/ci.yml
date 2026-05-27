@@ -54,21 +54,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump version and push tag
+      - name: Bump version, push tag, and create release
+        id: version
         run: |
           LATEST=$(git tag --sort=-v:refname | grep '^v' | head -1)
           LATEST=${LATEST:-v0.0.0}
-          # Extract major.minor.patch and bump patch
           RAW=$(echo "$LATEST" | sed 's/^v//')
           MAJOR=$(echo "$RAW" | cut -d. -f1)
           MINOR=$(echo "$RAW" | cut -d. -f2)
           PATCH=$(echo "$RAW" | cut -d. -f3)
           NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
           echo "Latest: $LATEST → Next: $NEXT"
+          echo "next=$NEXT" >> $GITHUB_OUTPUT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$NEXT"
           git push origin "$NEXT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.next }}
+          generate_release_notes: true
 
   release:
     name: Release
