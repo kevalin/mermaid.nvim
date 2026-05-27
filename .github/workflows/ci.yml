@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        nvim_version: [v0.8.0, v0.9.5, v0.10.0, stable, nightly]
+        nvim_version: [v0.9.5, v0.10.0, stable, nightly]
     steps:
       - uses: actions/checkout@v4
 
