@@ -27,7 +27,7 @@ local function refresh()
   local port = server.port or "—"
   local url = port ~= "—" and ("http://localhost:" .. port) or "not running"
   local renderer = require("mermaid").config.preview.renderer or "mermaid.js"
-  local theme_mode = server.theme_mode or "light"
+  local theme_mode = server.get_effective_theme_mode() or "light"
   local client_count = 0
   for _, _ in pairs(server.clients or {}) do client_count = client_count + 1 end
   local status = server.server and "connected" or "stopped"
