@@ -1,9 +1,15 @@
 -- Tests for the server module (unit-level, no actual sockets)
 describe("mermaid server", function()
+  local mermaid = require("mermaid")
+
   if os.getenv("CI") then
     pending("skipped in CI: TCP handles prevent clean nvim exit (libuv)")
     return
   end
+
+  before_each(function()
+    mermaid.config.preview.port = nil
+  end)
   describe("startup / shutdown", function()
     it("starts and stops without errors", function()
       local server = require("mermaid.server")
@@ -25,6 +31,16 @@ describe("mermaid server", function()
       local port1 = server.start_server()
       local port2 = server.start_server()
       assert.are.equal(port1, port2)
+
+      server.stop_server()
+    end)
+
+    it("binds to configured preview port", function()
+      mermaid.config.preview.port = 54321
+      local server = require("mermaid.server")
+
+      local port = server.start_server()
+      assert.are.equal(54321, port)
 
       server.stop_server()
     end)

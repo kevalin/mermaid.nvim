@@ -60,6 +60,7 @@ require("mermaid").setup({
     preview = {
         renderer = "mermaid.js",   -- "mermaid.js" or "beautiful-mermaid"
         theme = "default",          -- Theme name (renderer-specific)
+        port = nil,                   -- Fixed preview server port for SSH forwarding
     },
 })
 ```

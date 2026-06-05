@@ -196,11 +196,24 @@ function M.set_content(content)
 end
 
 --- Start the HTTP server, return the assigned port
-function M.start_server()
+--- Optional arg allows overriding the configured port.
+function M.start_server(desired_port)
   if M.server then return M.port end
 
+  local configured_port = require("mermaid").config.preview.port
+  local bind_port = desired_port or configured_port or 0
+
   M.server = uv.new_tcp()
-  M.server:bind("127.0.0.1", 0)
+  local ok, bind_err = M.server:bind("127.0.0.1", bind_port)
+  if not ok then
+    local port_name = bind_port == 0 and "ephemeral port" or tostring(bind_port)
+    vim.schedule(function()
+      vim.notify("Mermaid: Could not bind preview server to " .. port_name .. ": " .. tostring(bind_err), vim.log.levels.ERROR)
+    end)
+    M.server:close()
+    M.server = nil
+    return nil
+  end
 
   local addr = M.server:getsockname()
   M.port = addr.port

@@ -11,6 +11,7 @@ M.config = {
     preview = {
         renderer = "mermaid.js", -- Options: "mermaid.js", "beautiful-mermaid"
         theme = "default",       -- Theme for the renderer
+        port = nil,               -- Fixed preview server port for SSH forwarding; nil uses an ephemeral port
         beautiful_mermaid_path = nil, -- Path to beautiful-mermaid (e.g. /usr/local/lib/node_modules/beautiful-mermaid)
     },
 }
