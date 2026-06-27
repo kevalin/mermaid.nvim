@@ -127,6 +127,7 @@ local function pad_mermaid_tokens(line)
     "%=%=",          -- == (Thick link)
 
     -- Misc
+    ":::",          -- Class assignment (must be before bare :)
     ":",            -- Colon (often splits label)
   }
 
@@ -146,6 +147,9 @@ local function pad_mermaid_tokens(line)
   -- Remove space before colon when it follows a word character
   -- (sequence diagram labels: `Bob: Hello`, not `Bob : Hello`)
   line = line:gsub("(%w) :", "%1:")
+
+  -- Remove spaces around class assignment operator :::
+  line = line:gsub("%s*:::%s*", ":::")
 
   return line
 end

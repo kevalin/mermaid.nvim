@@ -183,6 +183,21 @@ describe("mermaid format — edge cases v2", function()
     end)
   end)
 
+  describe("class assignment operator", function()
+    it("does not split the ::: class assignment operator", function()
+      local result = format_text({
+        "flowchart TD",
+        "A:::myClass --> B:::otherClass",
+        "C:::class1-->D:::class2",
+        "E ::: class3",
+      })
+      assert.are.same("flowchart TD", result[1])
+      assert.are.same("  A:::myClass --> B:::otherClass", result[2])
+      assert.are.same("  C:::class1 --> D:::class2", result[3])
+      assert.are.same("  E:::class3", result[4])
+    end)
+  end)
+
   describe("empty buffer", function()
     it("handles completely empty buffer gracefully", function()
       local buf = vim.api.nvim_create_buf(false, true)
