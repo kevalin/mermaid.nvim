@@ -357,7 +357,7 @@ function M.get_html_template()
   </script>]]
   else
     scripts = [[
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@latest/dist/mermaid.min.js"></script>
   <script>
     window.addEventListener('load', () => {
         mermaid.initialize({ startOnLoad: false, theme: ']] .. theme .. [[' });
