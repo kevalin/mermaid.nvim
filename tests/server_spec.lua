@@ -72,8 +72,10 @@ describe("mermaid server", function()
       local html = server.get_html_template()
       assert.is_not_nil(html)
       assert.is_true(#html > 0)
-      -- Should contain mermaid.js script
+      -- Should contain mermaid.js script, loaded at the latest version
       assert.is_true(html:find("mermaid%.min%.js") ~= nil)
+      assert.is_true(html:find("mermaid@latest/dist/mermaid%.min%.js") ~= nil,
+        "preview should load mermaid@latest")
       -- Should contain our preview.js
       assert.is_true(html:find("/js/preview.js") ~= nil)
       -- Should contain SSE script
