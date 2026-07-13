@@ -9,8 +9,9 @@ M.config = {
         command = "mmdc",
     },
     preview = {
-        renderer = "mermaid.js", -- Options: "mermaid.js", "beautiful-mermaid"
-        theme = "default",       -- Theme for the renderer
+        port = nil,
+        renderer = "mermaid.js",      -- Options: "mermaid.js", "beautiful-mermaid"
+        theme = "default",            -- Theme for the renderer
         beautiful_mermaid_path = nil, -- Path to beautiful-mermaid (e.g. /usr/local/lib/node_modules/beautiful-mermaid)
     },
 }

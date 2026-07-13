@@ -97,7 +97,7 @@ end
 
 function M.do_lint_async(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local content = table.concat(lines, "\n")
+  local extracted = require("mermaid.diagram").extract(table.concat(lines, "\n"))
   local tmpfile = os.tmpname() .. ".svg"
 
   local stdin = uv.new_pipe(false)
@@ -166,7 +166,7 @@ function M.do_lint_async(bufnr)
     end
   end)
 
-  uv.write(stdin, content)
+  uv.write(stdin, extracted)
   uv.shutdown(stdin, function()
     if not stdin:is_closing() then stdin:close() end
   end)

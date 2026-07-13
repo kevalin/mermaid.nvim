@@ -38,6 +38,7 @@ vim.api.nvim_create_user_command("MermaidRender", function()
 
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   local content = table.concat(lines, "\n")
+  content = require("mermaid.diagram").extract(content)
   if content:match("^%s*$") then
     vim.notify("Mermaid: Buffer is empty", vim.log.levels.WARN)
     return

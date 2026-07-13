@@ -199,13 +199,31 @@ end
 function M.start_server()
   if M.server then return M.port end
 
+  local config_port = require("mermaid").config.preview.port or 0
+
   M.server = uv.new_tcp()
-  M.server:bind("127.0.0.1", 0)
+  local bind_err = M.server:bind("127.0.0.1", config_port)
+  if type(bind_err) == "string" then
+    M.server:close()
+    M.server = nil
+    return nil, bind_err
+  end
 
   local addr = M.server:getsockname()
+  if not addr then
+    M.server:close()
+    M.server = nil
+    return nil, "getsockname returned nil"
+  end
   M.port = addr.port
 
-  M.server:listen(128, function(err)
+  -- Atomic guard: stop_server may have been called between previous checks
+  -- and this point (e.g. via an event loop yield).
+  local server_sock = M.server
+  local port = M.port
+  if not server_sock then return nil end
+
+  server_sock:listen(128, function(err)
     if err then
       vim.schedule(function()
         vim.notify("Mermaid: Listen error: " .. tostring(err), vim.log.levels.ERROR)
@@ -215,7 +233,7 @@ function M.start_server()
     M.start_monitoring()
 
     local client = uv.new_tcp()
-    M.server:accept(client)
+    server_sock:accept(client)
 
     -- Optional: set TCP keepalive
     client:keepalive(true, 30)

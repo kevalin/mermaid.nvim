@@ -55,11 +55,12 @@ require("mermaid").setup({
     },
     lint = {
         enabled = true,            -- Enable diagnostics via mmdc
-        command = "mmdc",           -- Path to mermaid-cli executable
+        command = "mmdc",          -- Path to mermaid-cli executable
     },
     preview = {
         renderer = "mermaid.js",   -- "mermaid.js" or "beautiful-mermaid"
-        theme = "default",          -- Theme name (renderer-specific)
+        theme = "default",         -- Theme name (renderer-specific)
+        port = nil,                -- Optional, specify a port to use. Not recommended if starting multiple sessions on the same host
     },
 })
 ```
