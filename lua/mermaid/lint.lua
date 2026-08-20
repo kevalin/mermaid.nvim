@@ -71,7 +71,7 @@ function M.lint()
   close_timer()
   timer = uv.new_timer()
   timer:start(500, 0, vim.schedule_wrap(function()
-    timer = nil
+    close_timer()
     if not vim.api.nvim_buf_is_valid(bufnr) then return end
     M.do_lint_async(bufnr)
   end))
