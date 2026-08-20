@@ -33,17 +33,13 @@ jobs:
         nvim_version: [v0.9.5, v0.10.0, v0.11.0, stable, nightly]
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Neovim
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: ${{ matrix.nvim_version }}
-
       - name: Install plenary.nvim
-        run: |
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim /tmp/plenary.nvim
-
+        run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim /tmp/plenary.nvim
       - name: Run tests
         run: |
           timeout 3m nvim --headless -u tests/minimal_init.lua \\
@@ -57,9 +53,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+        with: { fetch-depth: 0 }
       - name: Bump version, push tag, and create release
         id: version
         run: |
@@ -70,15 +64,12 @@ jobs:
           MINOR=$(echo "$RAW" | cut -d. -f2)
           PATCH=$(echo "$RAW" | cut -d. -f3)
           NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
-          echo "Latest: $LATEST → Next: $NEXT"
           echo "next=$NEXT" >> $GITHUB_OUTPUT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$NEXT"
           git push origin "$NEXT"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.next }}
           generate_release_notes: true
@@ -91,7 +82,5 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
+      - uses: softprops/action-gh-release@v2
+        with: { generate_release_notes: true }
