@@ -3,30 +3,28 @@ describe("mermaid lint", function()
   local lint = require("mermaid.lint")
 
   before_each(function()
-    -- Ensure lint is enabled in config
+    -- Keep unit tests independent of any globally installed mmdc binary.
+    -- The lint implementation is exercised through parsing and setup tests;
+    -- integration with mmdc belongs outside this unit suite.
     require("mermaid").setup({
-      lint = { enabled = true, command = "mmdc" },
+      lint = { enabled = true, command = "__mermaid_mmdc_missing__" },
     })
   end)
 
   describe("error parsing", function()
     it("extracts line number from mmdc Parse error", function()
-      -- Simulate typical mmdc stderr output
       local stderr_output = "Parse error on line 5:\n"
         .. "Trying to ...\n"
         .. "Expecting 'SEMI', 'NEWLINE', ... got 'EOF'"
-
       local line_num = stderr_output:match("Parse error on line (%d+)")
       assert.are.equal("5", line_num)
       assert.are.equal(5, tonumber(line_num))
-
-      -- Verify parse function returns correct 0-indexed lnum
       local lint_mod = require("mermaid.lint")
-      -- Access internal function via module-level test
+      assert.is_table(lint_mod)
     end)
 
     it("handles 'Error: Parse error on line' format", function()
-      local stderr = "Error: Parse error on line 12:\ngraph TD\n    A[Start] --> B[End]TEXT\n                       ^\nExpecting 'NEWLINE', 'SPACE', got 'TEXT'"
+      local stderr = "Error: Parse error on line 12:\ngraph TD\n A[Start] --> B[End]TEXT\n ^\nExpecting 'NEWLINE', 'SPACE', got 'TEXT'"
       local clean = stderr:gsub("\x1b%[%d+;?%d*m", "")
       local line_num = clean:match("[Pp]arse error on line (%d+)")
       assert.are.equal("12", line_num)
@@ -69,7 +67,6 @@ describe("mermaid lint", function()
     it("handles ANSI escape codes in stderr", function()
       local stderr = "\x1b[31mParse error on line 7:\n\x1b[0mExpecting 'NEWLINE'"
       local clean = stderr:gsub("\x1b%[%d+;?%d*m", "")
-      -- Clean should no longer have escape codes
       assert.is_nil(clean:find("\x1b%["))
       assert.is_true(clean:find("Parse error on line 7:") ~= nil)
     end)
@@ -77,7 +74,6 @@ describe("mermaid lint", function()
 
   describe("diagnostic creation", function()
     it("creates diagnostics with correct lnum (0-indexed)", function()
-      -- mmdc reports 1-indexed, vim.diagnostic uses 0-indexed
       local line_string = "5"
       local line_num = tonumber(line_string)
       local buf_line = line_num - 1
@@ -85,7 +81,6 @@ describe("mermaid lint", function()
     end)
 
     it("validates namespace is set", function()
-      -- namespace should be a valid integer ID
       local ns = vim.api.nvim_create_namespace("mermaid_lint_test")
       assert.is_number(ns)
       assert.is_true(ns > 0)
@@ -94,8 +89,6 @@ describe("mermaid lint", function()
 
   describe("debounce timer", function()
     it("lint function can be called without errors", function()
-      -- Just verify lint() doesn't crash when mmdc is missing
-      -- (it checks vim.fn.executable first)
       local ok, err = pcall(lint.lint)
       assert.is_true(ok, "lint() should not throw: " .. tostring(err))
     end)
