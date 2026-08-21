@@ -147,16 +147,20 @@ Supports the complete Mermaid feature set.
 
 ## 🧑‍💻 Terminal Inline Rendering
 
-`mermaid.nvim` can render diagrams directly in your terminal:
+`mermaid.nvim` can render diagrams directly in your terminal. The available
+path depends on both the terminal and Neovim version:
 
 ```
-kitty protocol  ─── ✅ Full-color, scalable SVG rendering
-chafa           ─── ✅ ASCII/ANSI art (works in any terminal)
-sixel           ─── ⏳ Planned
-iTerm2          ─── ⏳ Planned
+Kitty/Ghostty + Neovim 0.12+  ─── ✅ Kitty graphics protocol
+Neovim 0.9.5–0.11 + chafa    ─── ✅ ASCII/ANSI fallback
+Browser preview               ─── ✅ Universal fallback
+Sixel / iTerm2 protocol       ─── ⏳ Planned
 ```
 
-Run `:MermaidRender` to try it. The plugin auto-detects your terminal's capabilities.
+Run `:MermaidRender` to try it. Kitty rendering is invoked without `/dev/tty`;
+Neovim 0.12+ forwards the generated escape sequences through its host-TUI API.
+Older Neovim versions remain supported and fall back to `chafa` when installed,
+or can use `:MermaidPreview` in the browser.
 
 ---
 
@@ -181,7 +185,7 @@ A: Add `-- mermaid-format-ignore` at the end of lines you want to skip. File a b
 A: Install it globally: `npm install -g @mermaid-js/mermaid-cli`. The plugin auto-detects the `mmdc` binary.
 
 **Q: Can I use this without a browser?**
-A: Yes! Use `:MermaidRender` with Kitty terminal or `chafa` installed for inline rendering.
+A: Yes. Use `:MermaidRender` with Kitty or Ghostty on Neovim 0.12+, or install `chafa` for older Neovim versions.
 
 **Q: The preview page is white in dark mode**
 A: The plugin auto-detects your Neovim `background` setting. Run `:set background=dark` and the preview will sync. If it doesn't, restart the preview with `:MermaidPreviewStop` then `:MermaidPreview`.
@@ -205,7 +209,8 @@ A: The plugin is Lua-based so it runs anywhere Neovim runs. The built-in server 
 
 ### Inline rendering not working
 - **Terminal detection**: `:lua print(require("mermaid.render").detect_capability())`
-- **Kitty**: Ensure `kitty +kitten icat` works: `echo test | kitty +kitten icat`
+- **Kitty/Ghostty**: Neovim 0.12+ is required for graphics-protocol output; also check `kitty +kitten icat --help`
+- **Older Neovim**: Install `chafa`, or use `:MermaidPreview`
 - **chafa**: `chafa --version` should print a version ≥ 0.8
 
 ### Diagnostics not showing errors

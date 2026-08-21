@@ -7,19 +7,63 @@
 --   none:   Fallback — no inline rendering
 --
 -- Detection logic:
---   1. Check $KITTY_WINDOW_ID for Kitty protocol
+--   1. Check Kitty/Ghostty environment markers and the kitty CLI
 --   2. Check $TERM_PROGRAM for iTerm2
 --   3. Check $TERM for "sixel" or "xterm" (best-effort)
 --   4. Check if `chafa` is installed
 --   5. Fallback to "none" (URL-only)
+--
+-- Kitty rendering uses nvim_ui_send() (Neovim 0.12+) to forward protocol
+-- escape sequences to the host TUI. Older versions safely fall back to chafa.
 local M = {}
+
+local function host_tui()
+  if type(vim.api.nvim_ui_send) ~= "function" then return nil end
+
+  for _, ui in ipairs(vim.api.nvim_list_uis()) do
+    if ui.stdout_tty then return ui end
+  end
+
+  return nil
+end
+
+local function render_with_kitty(filepath, ui)
+  local width = math.max(1, ui.width or vim.o.columns)
+  local height = math.max(1, (ui.height or vim.o.lines) - 1)
+  local window_size = string.format("%d,%d,%d,%d", width, height, width * 10, height * 20)
+  local place = string.format("%dx%d@0x0", width, height)
+  local output = vim.fn.system({
+    "kitty", "+kitten", "icat",
+    "--stdin=no",
+    "--use-window-size", window_size,
+    "--place", place,
+    "--transfer-mode=stream",
+    filepath,
+  })
+
+  if vim.v.shell_error ~= 0 then
+    return { ok = false, error = "kitty icat failed: " .. (output or "") }
+  end
+
+  local ok, err = pcall(vim.api.nvim_ui_send, output)
+  if not ok then
+    return { ok = false, error = "failed to send kitty output to terminal: " .. tostring(err) }
+  end
+
+  return { ok = true, method = "kitty" }
+end
 
 --- Detect what terminal rendering capability is available
 function M.detect_capability()
   local env = vim.fn.environ()
+  local term = type(env["TERM"]) == "string" and env["TERM"]:lower() or ""
+  local term_program = type(env["TERM_PROGRAM"]) == "string" and env["TERM_PROGRAM"]:lower() or ""
 
-  -- Kitty protocol (most reliable)
-  if vim.fn.executable("kitty") == 1 and env["KITTY_WINDOW_ID"] ~= vim.NIL then
+  local kitty_window_id = env["KITTY_WINDOW_ID"]
+  local supports_kitty = (type(kitty_window_id) == "string" and kitty_window_id ~= "")
+    or term_program == "ghostty"
+    or term:match("ghostty") ~= nil
+  if vim.fn.executable("kitty") == 1 and supports_kitty then
     return "kitty"
   end
 
@@ -29,7 +73,6 @@ function M.detect_capability()
   end
 
   -- Sixel
-  local term = env["TERM"] or ""
   if term:match("sixel") then
     return "sixel"
   end
@@ -101,14 +144,25 @@ function M.render_file(filepath)
   local cap = M.detect_capability()
 
   if cap == "kitty" then
-    -- Use kitty +kitten icat
-    local result = vim.fn.system({ "kitty", "+kitten", "icat", filepath })
-    if vim.v.shell_error == 0 then
-      return { ok = true, method = "kitty" }
+    local kitty_result
+    local ui = host_tui()
+    if ui then
+      kitty_result = render_with_kitty(filepath, ui)
+      if kitty_result.ok then return kitty_result end
     else
-      return { ok = false, error = "kitty icat failed: " .. (result or "") }
+      kitty_result = {
+        ok = false,
+        error = "Kitty inline rendering requires Neovim 0.12+; install chafa or use :MermaidPreview.",
+      }
     end
-  elseif cap == "chafa" then
+
+    if vim.fn.executable("chafa") ~= 1 then
+      return kitty_result
+    end
+    cap = "chafa"
+  end
+
+  if cap == "chafa" then
     -- Convert SVG to PNG first, then render via chafa
     local tmp_png = os.tmpname() .. ".png"
     -- Try converting with ImageMagick or rsvg-convert
