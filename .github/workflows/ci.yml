@@ -42,7 +42,7 @@ jobs:
         run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim /tmp/plenary.nvim
       - name: Run tests
         run: |
-          timeout 3m nvim --headless -u tests/minimal_init.lua \\
+          timeout 3m nvim --headless -u tests/minimal_init.lua \
             -c "PlenaryBustedDirectory tests/ { minimal_init = 'tests/minimal_init.lua' }"
 
   auto-tag:
