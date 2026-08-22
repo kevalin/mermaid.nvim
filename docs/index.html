@@ -3,279 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mermaid.nvim 🧜</title>
-  <meta name="description" content="A feature-rich Neovim plugin for working with Mermaid diagrams — preview, format, lint, and render inline.">
+  <title>mermaid.nvim — Mermaid diagrams in Neovim</title>
+  <meta name="description" content="Write and preview Mermaid diagrams inside Neovim: live browser preview, auto-format, lint diagnostics, and inline terminal rendering — with zero dependencies for core features.">
   <meta name="theme-color" content="#1e1e2e">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%9C%3C/text%3E%3C/svg%3E">
+  <link rel="canonical" href="https://kevalin.github.io/mermaid.nvim/">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="mermaid.nvim">
-  <meta property="og:description" content="Preview, format, lint, and render Mermaid diagrams inside Neovim.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="mermaid.nvim">
+  <meta property="og:title" content="mermaid.nvim — Mermaid diagrams in Neovim">
+  <meta property="og:description" content="Live preview, auto-format, lint diagnostics, and inline terminal rendering for Mermaid diagrams — inside Neovim.">
   <meta property="og:url" content="https://kevalin.github.io/mermaid.nvim/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/kevalin/mermaid.nvim/main/media/preview-beautiful.png">
+  <meta name="twitter:card" content="summary_large_image">
 
   <style>
-    :root {
-      --bg: #1e1e2e;
-      --bg-2: #181825;
-      --fg: #cdd6f4;
-      --fg-2: #a6adc8;
-      --accent: #89b4fa;
-      --accent-2: #b4befe;
-      --green: #a6e3a1;
-      --yellow: #f9e2af;
-      --border: #313244;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      line-height: 1.6;
-    }
-
-    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 80px 24px 60px;
-      background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 100%);
-    }
-    .hero h1 { font-size: 3rem; margin-bottom: 8px; }
-    .hero h1 span { font-size: 2.8rem; }
-    .hero .tagline {
-      font-size: 1.15rem;
-      color: var(--fg-2);
-      max-width: 600px;
-      margin: 0 auto 24px;
-    }
-    .badges { margin-bottom: 32px; }
-    .badges img { height: 20px; margin: 0 3px; vertical-align: middle; }
-
-    /* Buttons */
-    .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 12px 24px; border-radius: 8px; text-decoration: none;
-      font-weight: 600; font-size: 0.95rem; transition: all 0.2s;
-    }
-    .btn-primary { background: var(--accent); color: var(--bg); }
-    .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); }
-    .btn-secondary {
-      background: transparent; color: var(--fg); border: 1px solid var(--border);
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* Sections */
-    section { padding: 60px 0; border-bottom: 1px solid var(--border); }
-    section:last-child { border-bottom: none; }
-    h2 {
-      font-size: 1.6rem; margin-bottom: 24px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    h3 { font-size: 1.15rem; margin: 20px 0 8px; color: var(--accent); }
-
-    /* Feature grid */
-    .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-    .feature {
-      background: var(--bg-2); border-radius: 10px; padding: 20px;
-      border: 1px solid var(--border);
-    }
-    .feature h3 { margin-top: 0; }
-    .feature p { color: var(--fg-2); font-size: 0.9rem; }
-    .feature .badge {
-      display: inline-block; font-size: 0.75rem; padding: 2px 8px;
-      border-radius: 4px; margin-top: 8px;
-    }
-    .badge-none { background: var(--green); color: var(--bg); }
-    .badge-opt { background: var(--yellow); color: var(--bg); }
-
-    /* Commands table */
-    table {
-      width: 100%; border-collapse: collapse; font-size: 0.9rem;
-    }
-    th, td {
-      text-align: left; padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-    }
-    th { color: var(--accent); font-weight: 600; }
-    code {
-      background: var(--bg-2); padding: 2px 6px; border-radius: 4px;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.85rem;
-    }
-    pre {
-      background: var(--bg-2); padding: 16px; border-radius: 8px;
-      overflow-x: auto; font-size: 0.85rem; border: 1px solid var(--border);
-      margin: 12px 0;
-    }
-
-    /* Footer */
-    footer {
-      text-align: center; padding: 40px 24px; color: var(--fg-2); font-size: 0.85rem;
-    }
-    footer a { color: var(--accent); }
-
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 2rem; }
-      .hero { padding: 48px 16px 36px; }
-      .features { grid-template-columns: 1fr; }
-    }
+    :root { --bg:#1e1e2e; --bg-deep:#181825; --surface:#24243a; --fg:#cdd6f4; --muted:#a6adc8; --faint:#7f849c; --accent:#89b4fa; --accent-2:#74c7ec; --green:#a6e3a1; --yellow:#f9e2af; --peach:#fab387; --mauve:#cba6f7; --border:#313244; --border-soft:#2a2a3f; --mono:ui-monospace,'JetBrains Mono','Fira Code','Cascadia Code',Menlo,Consolas,monospace; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; --radius:12px; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+    body { font-family:var(--sans); background:var(--bg); color:var(--fg); line-height:1.65; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:1060px; margin:0 auto; padding:0 24px; }
+    a { color:var(--accent); } a:hover { color:var(--accent-2); }
+    a:focus-visible,summary:focus-visible { outline:2px solid var(--accent-2); outline-offset:2px; border-radius:4px; }
+    .skip-link { position:absolute; left:-9999px; top:0; background:var(--accent); color:var(--bg-deep); padding:8px 16px; z-index:100; font-weight:600; text-decoration:none; }
+    .skip-link:focus { left:0; }
+    .site-header { position:sticky; top:0; z-index:50; background:var(--bg-deep); border-bottom:1px solid var(--border-soft); }
+    .site-header .wrap { display:flex; align-items:center; gap:24px; min-height:60px; }
+    .brand { font-family:var(--mono); font-weight:700; font-size:1.05rem; color:var(--fg); text-decoration:none; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .brand:hover { color:var(--accent); } .site-nav { margin-left:auto; } .site-nav ul { display:flex; gap:4px; list-style:none; flex-wrap:wrap; }
+    .site-nav a { color:var(--muted); text-decoration:none; padding:6px 12px; border-radius:8px; font-size:.92rem; } .site-nav a:hover { color:var(--fg); background:var(--surface); }
+    .gh-link { font-size:.92rem; text-decoration:none; border:1px solid var(--border); border-radius:8px; padding:6px 14px; color:var(--fg); white-space:nowrap; } .gh-link:hover { border-color:var(--accent); color:var(--accent); }
+    @media (max-width:760px) { .site-nav { display:none; } }
+    .hero { padding:72px 0 64px; border-bottom:1px solid var(--border-soft); } .hero-grid { display:grid; grid-template-columns:minmax(0,11fr) minmax(0,9fr); gap:48px; align-items:center; }
+    @media (max-width:880px) { .hero-grid { grid-template-columns:1fr; gap:40px; } }
+    .hero h1 { font-size:clamp(2rem,4.5vw,3rem); line-height:1.15; letter-spacing:-.02em; margin:18px 0 16px; } .hero h1 em { font-style:normal; color:var(--accent); }
+    .hero .lede { font-size:1.08rem; color:var(--muted); max-width:52ch; margin-bottom:28px; } .meta-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px; }
+    .chip { font-family:var(--mono); font-size:.8rem; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:3px 12px; } .chip strong { color:var(--fg); }
+    .cta-row { display:flex; flex-wrap:wrap; gap:12px; } .btn { display:inline-flex; padding:11px 22px; border-radius:10px; font-weight:600; font-size:.95rem; text-decoration:none; } .btn-primary { background:var(--accent); color:var(--bg-deep); } .btn-primary:hover { background:var(--accent-2); color:var(--bg-deep); } .btn-ghost { color:var(--fg); border:1px solid var(--border); } .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+    .terminal { background:var(--bg-deep); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.35); } .term-bar { display:flex; align-items:center; gap:8px; padding:9px 14px; border-bottom:1px solid var(--border-soft); } .term-dot { width:11px; height:11px; border-radius:50%; background:var(--border); } .term-dot.r{background:#f38ba8}.term-dot.y{background:var(--yellow)}.term-dot.g{background:var(--green)} .term-title { font-family:var(--mono); font-size:.78rem; color:var(--faint); margin-left:8px; } .term-status { margin-left:auto; font-family:var(--mono); font-size:.72rem; color:var(--green); border:1px solid var(--border); border-radius:999px; padding:1px 10px; } .term-body { padding:16px 18px 18px; } .term-body .path { font-family:var(--mono); font-size:.78rem; color:var(--faint); margin-bottom:10px; } .term-body pre { font-family:var(--mono); font-size:.8rem; line-height:1.7; color:var(--fg); overflow-x:auto; } .tk-kw{color:var(--mauve)}.tk-node{color:var(--accent)}.tk-edge{color:var(--faint)}.tk-lbl{color:var(--yellow)} .term-divider { display:flex; align-items:center; gap:12px; margin:14px 0; color:var(--faint); font-family:var(--mono); font-size:.72rem; white-space:nowrap; } .term-divider::before,.term-divider::after { content:""; height:1px; background:var(--border-soft); flex:1; } .flow-svg { display:block; width:100%; height:auto; }
+    section { padding:64px 0; border-bottom:1px solid var(--border-soft); } section:last-of-type { border-bottom:none; } .sec-head { max-width:62ch; margin-bottom:36px; } .sec-head h2 { font-size:clamp(1.4rem,2.5vw,1.8rem); letter-spacing:-.015em; margin-bottom:10px; } .sec-head p { color:var(--muted); }
+    .feature-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1px; background:var(--border-soft); border:1px solid var(--border-soft); border-radius:var(--radius); overflow:hidden; } .feature { background:var(--bg); padding:22px 24px; } .feature h3 { font-size:1.02rem; margin-bottom:6px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; } .feature h3 .dep { font-size:.7rem; font-weight:500; font-family:var(--mono); color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:1px 9px; white-space:nowrap; } .dep-none::before{content:"●";color:var(--green);margin-right:5px}.dep-opt::before{content:"●";color:var(--yellow);margin-right:5px}.feature p{color:var(--muted);font-size:.92rem}.dep-legend{margin-top:14px;font-size:.82rem;color:var(--faint)}.dep-legend span{margin-right:18px}.dep-legend .g{color:var(--green)}.dep-legend .y{color:var(--yellow)}
+    .steps { display:grid; gap:20px; } .step { display:grid; grid-template-columns:44px 1fr; gap:18px; background:var(--bg-deep); border:1px solid var(--border-soft); border-radius:var(--radius); padding:20px 22px; } .step-n { width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-weight:700;display:flex;align-items:center;justify-content:center;counter-increment:step}.steps{counter-reset:step}.step-n::before{content:counter(step)}.step h3{font-size:1rem;margin-bottom:4px}.step p{color:var(--muted);font-size:.93rem;margin-bottom:10px}.step .note{font-size:.85rem;color:var(--faint)}
+    code { font-family:var(--mono); background:var(--bg-deep); border:1px solid var(--border-soft); padding:1px 6px; border-radius:6px; font-size:.86em; overflow-wrap:anywhere; } pre { background:var(--bg-deep); border:1px solid var(--border-soft); border-radius:var(--radius); padding:16px 18px; overflow-x:auto; font-size:.85rem; line-height:1.7; } pre code{background:none;border:none;padding:0;font-size:inherit}.c-key{color:var(--mauve)}.c-str{color:var(--green)}.c-num{color:var(--peach)}.c-cmt{color:var(--faint)}.c-cmd{color:var(--yellow)}
+    .table-scroll{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border-soft);vertical-align:top}th{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}tbody tr:last-child td{border-bottom:none}td code{white-space:nowrap}
+    .renderer-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-bottom:32px}figure img{width:100%;height:auto;display:block;background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--radius)}figcaption{font-size:.85rem;color:var(--muted);margin-top:10px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}figcaption .tag{font-family:var(--mono);font-size:.72rem;color:var(--accent);border:1px solid var(--border);border-radius:999px;padding:1px 9px}.callout{background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;font-size:.92rem;color:var(--muted);max-width:72ch}.callout strong{color:var(--fg)}
+    .cap-list{display:grid;gap:10px}.cap{display:flex;align-items:baseline;gap:14px;background:var(--bg-deep);border:1px solid var(--border-soft);border-radius:var(--radius);padding:14px 18px}.cap .status{font-family:var(--mono);font-size:.78rem;font-weight:700;flex-shrink:0;min-width:74px}.cap .ok{color:var(--green)}.cap .plan{color:var(--yellow)}.cap div p{font-size:.9rem;color:var(--muted)}.cap div strong{font-size:.95rem}
+    .docs-two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-bottom:32px}.docs-card{background:var(--bg-deep);border:1px solid var(--border-soft);border-radius:var(--radius);padding:22px 24px}.docs-card.help{border-color:var(--border)}.docs-card h3{font-size:1rem;margin-bottom:8px}.docs-card p{font-size:.92rem;color:var(--muted)}.docs-card .where{font-family:var(--mono);font-size:.75rem;color:var(--faint);display:block;margin-bottom:8px}.docs-card ul{margin:8px 0 0 18px;font-size:.9rem;color:var(--muted)}
+    details{background:var(--bg-deep);border:1px solid var(--border-soft);border-radius:var(--radius);padding:14px 20px;margin-top:20px}summary{cursor:pointer;font-weight:600;font-size:.95rem;color:var(--fg)}summary:hover{color:var(--accent)}details pre{margin-top:14px}.faq{display:grid;gap:12px;max-width:760px}.faq details{margin-top:0}.faq summary{font-weight:500}.faq details p{color:var(--muted);font-size:.92rem;margin-top:10px}.faq code{font-size:.82rem}footer{padding:40px 0 48px}footer .wrap{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:baseline;justify-content:space-between;color:var(--faint);font-size:.88rem}footer nav{display:flex;flex-wrap:wrap;gap:4px 20px}footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--accent)}
+    @media (max-width:600px){.hero{padding:48px 0 40px}.wrap{padding:0 16px}.step{grid-template-columns:1fr;gap:10px}.site-header .wrap{min-height:54px}.term-status{display:none}.cap{align-items:flex-start;flex-direction:column;gap:4px}}
   </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="wrap"><a class="brand" href="#top">🧜 mermaid.nvim</a><nav class="site-nav" aria-label="Site"><ul><li><a href="#features">Features</a></li><li><a href="#install">Install</a></li><li><a href="#renderers">Renderers</a></li><li><a href="#terminal">Terminal render</a></li><li><a href="#reference">Reference</a></li><li><a href="#faq">FAQ</a></li></ul></nav><a class="gh-link" href="https://github.com/kevalin/mermaid.nvim">GitHub ↗</a></div></header>
+<main id="main"><div id="top"></div>
+<section class="hero" aria-labelledby="hero-title"><div class="wrap hero-grid"><div><p style="font-family:var(--mono);font-size:.85rem;color:var(--faint)">A plugin for <a href="https://neovim.io/">Neovim</a> · <a href="https://mermaid.js.org/">Mermaid</a> diagrams</p><h1 id="hero-title">Write Mermaid diagrams in Neovim. <em>See them instantly.</em></h1><p class="lede">mermaid.nvim gives your <code>.mmd</code> buffers a live browser preview, a built-in formatter, lint diagnostics, and inline rendering for Kitty/Ghostty terminals — with zero dependencies for the core features.</p><div class="meta-chips" aria-label="Project facts"><span class="chip"><strong>Neovim</strong> ≥ 0.9.5</span><span class="chip"><strong>License</strong> MIT</span><span class="chip"><strong>Core</strong> dependency-free Lua</span><span class="chip"><strong>Filetypes</strong> .mmd · .mermaid</span></div><div class="cta-row"><a class="btn btn-primary" href="#install">Get started</a><a class="btn btn-ghost" href="https://github.com/kevalin/mermaid.nvim">View on GitHub</a></div></div><div class="terminal" role="img" aria-label="Terminal mock showing a Mermaid flowchart in Neovim and a live preview"><div class="term-bar"><span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span><span class="term-title">nvim diagram.mmd</span><span class="term-status">preview ● live</span></div><div class="term-body"><p class="path">~/notes/diagram.mmd — rendered as you type</p><pre><span class="tk-kw">flowchart TD</span>
+  A(Start) <span class="tk-edge">--&gt;</span> B{Is it sunny?}
+  B <span class="tk-lbl">-- Yes --&gt;</span> <span class="tk-node">C[Go to the park]</span>
+  B <span class="tk-lbl">-- No --&gt;</span> <span class="tk-node">D[Stay indoors]</span>
+  C <span class="tk-edge">--&gt;</span> E(Finish)
+  D <span class="tk-edge">--&gt;</span> E</pre><div class="term-divider">:MermaidPreview → localhost</div><svg class="flow-svg" viewBox="0 0 340 150" aria-hidden="true"><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7f849c"/></marker></defs><ellipse cx="34" cy="30" rx="28" ry="16" fill="#1e1e2e" stroke="#a6e3a1" stroke-width="1.4"/><text x="34" y="34" text-anchor="middle" font-size="10" fill="#a6e3a1" font-family="monospace">Start</text><path d="M92 30 L128 12 L164 30 L128 48 Z" fill="#1e1e2e" stroke="#f9e2af" stroke-width="1.4"/><text x="128" y="33" text-anchor="middle" font-size="9" fill="#f9e2af" font-family="monospace">sunny?</text><rect x="200" y="6" width="128" height="24" rx="6" fill="#1e1e2e" stroke="#89b4fa" stroke-width="1.4"/><text x="264" y="21" text-anchor="middle" font-size="9" fill="#89b4fa" font-family="monospace">Go to the park</text><rect x="200" y="56" width="128" height="24" rx="6" fill="#1e1e2e" stroke="#89b4fa" stroke-width="1.4"/><text x="264" y="71" text-anchor="middle" font-size="9" fill="#89b4fa" font-family="monospace">Stay indoors</text><ellipse cx="92" cy="126" rx="30" ry="16" fill="#1e1e2e" stroke="#a6e3a1" stroke-width="1.4"/><text x="92" y="130" text-anchor="middle" font-size="10" fill="#a6e3a1" font-family="monospace">Finish</text><line x1="62" y1="30" x2="88" y2="30" stroke="#7f849c" stroke-width="1.3" marker-end="url(#arr)"/><path d="M164 30 L182 30 L182 18 L196 18" fill="none" stroke="#7f849c" stroke-width="1.3" marker-end="url(#arr)"/><text x="170" y="12" font-size="8" fill="#f9e2af" font-family="monospace">Yes</text><path d="M128 48 L128 68 L196 68" fill="none" stroke="#7f849c" stroke-width="1.3" marker-end="url(#arr)"/><text x="134" y="62" font-size="8" fill="#f9e2af" font-family="monospace">No</text><path d="M264 30 L264 58 L80 58 L80 108" fill="none" stroke="#7f849c" stroke-width="1.3" marker-end="url(#arr)"/><path d="M264 80 L264 100 L104 100 L104 108" fill="none" stroke="#7f849c" stroke-width="1.3" marker-end="url(#arr)"/></svg></div></div></div></section>
+<section id="features" aria-labelledby="features-title"><div class="wrap"><div class="sec-head"><h2 id="features-title">Everything a diagram workflow needs</h2><p>mermaid.nvim bundles the full loop — highlight, format, lint, preview, render — in plain Lua. Optional integrations are clearly marked.</p></div><div class="feature-grid"><div class="feature"><h3>Live preview <span class="dep dep-none">no deps</span></h3><p>Real-time browser preview powered by a built-in Lua HTTP server with Server-Sent Events. Updates as you type.</p></div><div class="feature"><h3>Dual renderers <span class="dep dep-none">no deps</span></h3><p>Choose the standard <code>mermaid.js</code> renderer or the aesthetic <code>beautiful-mermaid</code> — one config option.</p></div><div class="feature"><h3>Inline render <span class="dep dep-opt">mmdc + chafa</span></h3><p>Render diagrams directly inside Kitty and Ghostty via the graphics protocol, or fall back to chafa ASCII/ANSI.</p></div><div class="feature"><h3>Auto-format <span class="dep dep-none">no deps</span></h3><p>Built-in formatter normalizes indentation and token spacing across Mermaid diagram types.</p></div><div class="feature"><h3>Diagnostics <span class="dep dep-opt">mmdc</span></h3><p>Lint errors surface as <code>vim.diagnostic</code> signs via mermaid-cli, auto-detected when installed.</p></div><div class="feature"><h3>Floating panel <span class="dep dep-none">no deps</span></h3><p>An in-editor panel shows the preview URL, connection status, and quick actions.</p></div><div class="feature"><h3>Dark mode sync <span class="dep dep-none">no deps</span></h3><p>Auto-detects Neovim’s <code>background</code> setting and live-syncs the browser preview theme.</p></div><div class="feature"><h3>Preview toolbar <span class="dep dep-none">no deps</span></h3><p>Zoom, pan, copy PNG to clipboard, and download SVG — right in the browser preview.</p></div></div><p class="dep-legend"><span><span class="g">●</span> no external dependencies</span><span><span class="y">●</span> optional — feature degrades gracefully without it</span></p></div></section>
+<section id="install" aria-labelledby="install-title"><div class="wrap"><div class="sec-head"><h2 id="install-title">Installation</h2><p>Three steps to a working setup. The core plugin has no dependencies; Tree-sitter provides syntax highlighting.</p></div><div class="steps"><div class="step"><div class="step-n" aria-hidden="true"></div><div><h3>Add the plugin with your plugin manager</h3><p>Shown with <a href="https://github.com/folke/lazy.nvim">lazy.nvim</a>; any plugin manager works.</p><pre><code><span class="c-key">return</span> {
+    <span class="c-str">"kevalin/mermaid.nvim"</span>,
+    dependencies = { <span class="c-str">"nvim-treesitter/nvim-treesitter"</span> },
+    config = <span class="c-key">function</span>()
+        <span class="c-cmd">require</span>(<span class="c-str">"mermaid"</span>).setup()
+        <span class="c-cmt">-- Install the Tree-sitter parser: :TSInstall mermaid</span>
+    <span class="c-key">end</span>,
+}</code></pre></div></div><div class="step"><div class="step-n" aria-hidden="true"></div><div><h3>Install the Tree-sitter parser</h3><p>Syntax highlighting for <code>.mmd</code> / <code>.mermaid</code> files comes from Tree-sitter.</p><pre><code><span class="c-cmd">:TSInstall</span> mermaid</code></pre></div></div><div class="step"><div class="step-n" aria-hidden="true"></div><div><h3>Add optional tooling</h3><p>Diagnostics and inline rendering use <code>mmdc</code>; chafa enables ASCII/ANSI rendering on Neovim 0.9.5–0.11.</p><pre><code><span class="c-cmt"># Optional diagnostics</span>
+npm install -g @mermaid-js/mermaid-cli
 
-<div class="hero">
-  <div class="container">
-    <h1>🧜 mermaid.nvim</h1>
-    <p class="tagline">
-      Preview, format, lint, and render Mermaid diagrams directly inside Neovim —<br>
-      with zero external dependencies for the core features.
-    </p>
-    <div class="badges">
-      <img src="https://img.shields.io/github/license/kevalin/mermaid.nvim" alt="License">
-      <img src="https://img.shields.io/badge/Neovim-%3E%3D0.9.5-green" alt="Neovim">
-      <img src="https://github.com/kevalin/mermaid.nvim/actions/workflows/ci.yml/badge.svg" alt="CI">
-    </div>
-    <div class="btn-group">
-      <a class="btn btn-primary" href="https://github.com/kevalin/mermaid.nvim">📦 Install from GitHub</a>
-      <a class="btn btn-secondary" href="#features">↓ Features</a>
-    </div>
-  </div>
-</div>
-
-<section id="features">
-  <div class="container">
-    <h2>🚀 Features</h2>
-    <div class="features">
-      <div class="feature">
-        <h3>🖥️ Live Preview</h3>
-        <p>Real-time browser preview via built-in Lua HTTP server with SSE. Updates as you type.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-      <div class="feature">
-        <h3>🎨 Dual Renderers</h3>
-        <p>Standard <code>mermaid.js</code> or aesthetic <code>beautiful-mermaid</code> — switch with one config option.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-      <div class="feature">
-        <h3>🔲 Floating Panel</h3>
-        <p>In-editor floating window showing preview URL, connection status, and quick actions.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-      <div class="feature">
-        <h3>📟 Inline Render</h3>
-        <p>Render diagrams directly in Kitty or chafa-capable terminals.</p>
-        <span class="badge badge-opt">mmdc + chafa</span>
-      </div>
-      <div class="feature">
-        <h3>✏️ Auto-Format</h3>
-        <p>Smart indentation and token spacing for all Mermaid diagram types.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-      <div class="feature">
-        <h3>🔍 Diagnostics</h3>
-        <p>Error checking via <code>vim.diagnostic</code> with mermaid-cli integration.</p>
-        <span class="badge badge-opt">mmdc</span>
-      </div>
-      <div class="feature">
-        <h3>🌓 Dark Mode</h3>
-        <p>Auto-detects Neovim's background setting and syncs the preview live.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-      <div class="feature">
-        <h3>⚡ Zero Config</h3>
-        <p>Works out of the box. Set up with 4 lines of Lua.</p>
-        <span class="badge badge-none">No deps</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <h2>📋 Commands</h2>
-    <table>
-      <thead>
-        <tr><th>Command</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>:MermaidPreview</code></td><td>Open live browser preview</td></tr>
-        <tr><td><code>:MermaidPreviewStop</code></td><td>Stop the preview server</td></tr>
-        <tr><td><code>:MermaidFormat</code></td><td>Auto-format current buffer</td></tr>
-        <tr><td><code>:MermaidRender</code></td><td>Render inline in terminal</td></tr>
-        <tr><td><code>:MermaidCopyURL</code></td><td>Copy preview URL to clipboard</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <h2>⚙️ Quick Start</h2>
-    <p>Install via lazy.nvim:</p>
-    <pre>return {
-    "kevalin/mermaid.nvim",
-    dependencies = { "nvim-treesitter/nvim-treesitter" },
-    config = function()
-        require("mermaid").setup()
-    end,
-}</pre>
-    <p>Then open a <code>.mmd</code> file and run <code style="white-space: nowrap">:MermaidPreview</code>.</p>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <h2>🗺️ Roadmap</h2>
-    <table>
-      <thead>
-        <tr><th>Feature</th><th>Status</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Live Preview (SSE)</td><td>✅ Done</td></tr>
-        <tr><td>Built-in Lua HTTP Server</td><td>✅ Done</td></tr>
-        <tr><td>Dual Renderers</td><td>✅ Done</td></tr>
-        <tr><td>Auto-Formatting</td><td>✅ Done</td></tr>
-        <tr><td>Diagnostics via mmdc</td><td>✅ Done</td></tr>
-        <tr><td>Dark Mode Adaptive</td><td>✅ Done</td></tr>
-        <tr><td>Floating Panel</td><td>✅ Done</td></tr>
-        <tr><td>Terminal Inline Render</td><td>✅ Done</td></tr>
-        <tr><td>CI/CD</td><td>✅ Done</td></tr>
-        <tr><td>Split Window Preview</td><td>⏳ Planned</td></tr>
-        <tr><td>Snippet Support</td><td>⏳ Planned</td></tr>
-        <tr><td>Obsidian-style Embedding</td><td>⏳ Planned</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <h2>🩵 Credits</h2>
-    <p>Built with ❤️ using:</p>
-    <ul style="color: var(--fg-2); line-height: 2;">
-      <li><a href="https://mermaid.js.org/" style="color: var(--accent);">mermaid.js</a> — Diagram rendering engine</li>
-      <li><a href="https://github.com/lukilabs/beautiful-mermaid" style="color: var(--accent);">beautiful-mermaid</a> — Aesthetic renderer</li>
-      <li><a href="https://github.com/bumbu/svg-pan-zoom" style="color: var(--accent);">svg-pan-zoom</a> — Interactive zoom and pan</li>
-    </ul>
-  </div>
-</section>
-
-<footer>
-  <div class="container">
-    <p>
-      <a href="https://github.com/kevalin/mermaid.nvim">GitHub</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/kevalin/mermaid.nvim/issues">Issues</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/kevalin/mermaid.nvim/discussions">Discussions</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/kevalin/mermaid.nvim/blob/main/LICENSE">MIT License</a>
-    </p>
-  </div>
-</footer>
-
+<span class="c-cmt"># Optional terminal fallback</span>
+<span class="c-cmd"># Debian/Ubuntu:</span> sudo apt install chafa</code></pre><p class="note">Then open a <code>.mmd</code> file and run <code>:MermaidPreview</code>.</p></div></div></div></div></section>
+<section id="renderers" aria-labelledby="renderers-title"><div class="wrap"><div class="sec-head"><h2 id="renderers-title">Two renderers, one plugin</h2><p>The same flowchart, rendered both ways. Switch with <code>preview.renderer</code> and pick a theme per renderer.</p></div><div class="renderer-pair"><figure><img src="media/preview-beautiful.png" alt="Example flowchart rendered by beautiful-mermaid" width="1024" height="537"><figcaption><span>Modern diagram aesthetics</span><span class="tag">beautiful-mermaid</span></figcaption></figure><figure><img src="media/preview-mermaid.png" alt="Example flowchart rendered by official mermaid.js" width="1024" height="536" loading="lazy"><figcaption><span>Full Mermaid specification support</span><span class="tag">mermaid.js</span></figcaption></figure></div><table><thead><tr><th scope="col">Renderer</th><th scope="col">Best for</th></tr></thead><tbody><tr><td><code>mermaid.js</code></td><td>Complete Mermaid feature set, including Font Awesome icons and edge labels</td></tr><tr><td><code>beautiful-mermaid</code></td><td>Aesthetic output; simplified parser, so complex diagrams should use <code>mermaid.js</code></td></tr></tbody></table></div></section>
+<section id="terminal" aria-labelledby="terminal-title"><div class="wrap"><div class="sec-head"><h2 id="terminal-title">Render inline — or in the browser</h2><p>The available path depends on your terminal and Neovim version. Run <code>:MermaidRender</code> to try it.</p></div><div class="cap-list"><div class="cap"><span class="status ok">✓ supported</span><div><strong>Kitty / Ghostty + Neovim 0.12+</strong><p>Kitty graphics protocol through Neovim’s host-TUI API.</p></div></div><div class="cap"><span class="status ok">✓ supported</span><div><strong>Neovim 0.9.5–0.11 + chafa</strong><p>ASCII/ANSI fallback when chafa (≥ 0.8) is installed.</p></div></div><div class="cap"><span class="status ok">✓ always</span><div><strong>Browser preview</strong><p>Universal fallback: <code>:MermaidPreview</code>.</p></div></div><div class="cap"><span class="status plan">◷ planned</span><div><strong>Sixel / iTerm2 protocol</strong><p>On the roadmap.</p></div></div></div></div></section>
+<section id="reference" aria-labelledby="reference-title"><div class="wrap"><div class="sec-head"><h2 id="reference-title">Reference</h2><p>Commands and configuration at a glance. This page is an overview — the full manual lives inside Neovim.</p></div><div class="docs-two-col"><div class="docs-card"><span class="where">you are here</span><h3>This webpage</h3><p>A guided tour of what the plugin does and how to get started.</p><ul><li>Quick start and feature overview</li><li>Kept in sync with the <a href="https://github.com/kevalin/mermaid.nvim/blob/main/README.md">README</a></li></ul></div><div class="docs-card help"><span class="where">authoritative · offline</span><h3><code>:help mermaid</code></h3><p>The reference manual ships as <code>doc/mermaid.txt</code> and is available offline in Neovim.</p><ul><li>Open in Neovim: <code>:h mermaid</code></li><li><a href="https://github.com/kevalin/mermaid.nvim/blob/main/doc/mermaid.txt">Read doc/mermaid.txt on GitHub</a></li></ul></div></div><h3 style="margin-bottom:12px">Commands</h3><table><thead><tr><th scope="col">Command</th><th scope="col">What it does</th></tr></thead><tbody><tr><td><code>:MermaidPreview</code></td><td>Open the live browser preview</td></tr><tr><td><code>:MermaidPreviewStop</code></td><td>Stop the preview server</td></tr><tr><td><code>:MermaidCopyURL</code></td><td>Copy the preview URL</td></tr><tr><td><code>:MermaidFormat</code></td><td>Format the current buffer</td></tr><tr><td><code>:MermaidRender</code></td><td>Render inline in the terminal</td></tr></tbody></table><h3 style="margin:32px 0 12px">Configuration defaults</h3><pre><code><span class="c-cmd">require</span>(<span class="c-str">"mermaid"</span>).setup({
+    format = { shift_width = <span class="c-num">4</span> },
+    lint = { enabled = <span class="c-key">true</span>, command = <span class="c-str">"mmdc"</span> },
+    preview = { renderer = <span class="c-str">"mermaid.js"</span>, theme = <span class="c-str">"default"</span> },
+})</code></pre><details><summary>Suggested keybindings</summary><pre><code>vim.keymap.set("n", "&lt;leader&gt;mp", "&lt;cmd&gt;MermaidPreview&lt;cr&gt;")
+vim.keymap.set("n", "&lt;leader&gt;mf", "&lt;cmd&gt;MermaidFormat&lt;cr&gt;")
+vim.keymap.set("n", "&lt;leader&gt;mr", "&lt;cmd&gt;MermaidRender&lt;cr&gt;")</code></pre></details><h3 style="margin:32px 0 12px">Requirements</h3><table><thead><tr><th scope="col">Component</th><th scope="col">Needed for</th></tr></thead><tbody><tr><td>Neovim ≥ 0.9.5</td><td>Everything</td></tr><tr><td>Tree-sitter mermaid parser</td><td>Syntax highlighting</td></tr><tr><td><code>mmdc</code></td><td>Optional diagnostics and inline render</td></tr><tr><td><code>chafa</code> ≥ 0.8</td><td>Inline render on older Neovim</td></tr></tbody></table></div></section>
+<section id="faq" aria-labelledby="faq-title"><div class="wrap"><div class="sec-head"><h2 id="faq-title">FAQ</h2><p>Common questions — more answers are in the README troubleshooting section.</p></div><div class="faq"><details><summary>The preview opens but shows “Loading…”</summary><p>Make sure the buffer has content and the SSE connection is established. Check the preview connection indicator.</p></details><details><summary><code>:MermaidFormat</code> broke my diagram</summary><p>Add <code>-- mermaid-format-ignore</code> to lines the formatter should skip.</p></details><details><summary>Can I use this without a browser?</summary><p>Yes. Use <code>:MermaidRender</code> with Kitty/Ghostty on Neovim 0.12+, or install <code>chafa</code> on older versions.</p></details><details><summary>Does this work on Windows?</summary><p>The plugin is Lua-based and runs anywhere Neovim runs.</p></details></div></div></section>
+</main><footer><div class="wrap"><p>🧜 mermaid.nvim — MIT licensed. Built on <a href="https://mermaid.js.org/">mermaid.js</a>, <a href="https://github.com/lukilabs/beautiful-mermaid">beautiful-mermaid</a>, and <a href="https://github.com/bumbu/svg-pan-zoom">svg-pan-zoom</a>.</p><nav aria-label="Footer"><a href="https://github.com/kevalin/mermaid.nvim">GitHub</a><a href="https://github.com/kevalin/mermaid.nvim/issues">Issues</a><a href="https://github.com/kevalin/mermaid.nvim/blob/main/doc/mermaid.txt">:help mermaid</a><a href="https://github.com/kevalin/mermaid.nvim/blob/main/LICENSE">License</a></nav></div></footer>
 </body>
 </html>
