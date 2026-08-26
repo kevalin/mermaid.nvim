@@ -63,8 +63,9 @@ export function initPreview(renderer, theme, themeMode) {
         const highResSVG = serializer.serializeToString(svgElement);
 
         const img = new Image();
-        const svgBlob = new Blob([highResSVG], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
+        // A blob-backed SVG containing Mermaid's XHTML foreignObject labels can
+        // make the destination canvas non-origin-clean in some browsers.
+        const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(highResSVG)}`;
 
         img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -91,7 +92,6 @@ export function initPreview(renderer, theme, themeMode) {
                     console.error('Failed to write to clipboard', err);
                     alert('Failed to copy image to clipboard');
                 }
-                URL.revokeObjectURL(url);
             }, 'image/png');
         };
         img.src = url;
