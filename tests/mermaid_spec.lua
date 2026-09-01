@@ -7,6 +7,18 @@ describe("mermaid.nvim", function()
       require("mermaid").setup({ test_option = true })
       assert.is_true(true)
     end)
+
+    it("defaults preview.port to 0", function()
+      local mermaid = require("mermaid")
+      mermaid.setup()
+      assert.are.equal(0, mermaid.config.preview.port)
+    end)
+
+    it("allows configuring custom preview.port", function()
+      local mermaid = require("mermaid")
+      mermaid.setup({ preview = { port = 8080 } })
+      assert.are.equal(8080, mermaid.config.preview.port)
+    end)
   end)
 
   describe("filetype detection", function()

@@ -9,6 +9,7 @@ M.config = {
         command = "mmdc",
     },
     preview = {
+        port = 0,                -- Port for preview server (0 or nil for random available port)
         renderer = "mermaid.js", -- Options: "mermaid.js", "beautiful-mermaid"
         theme = "default",       -- Theme for the renderer
         beautiful_mermaid_path = nil, -- Path to beautiful-mermaid (e.g. /usr/local/lib/node_modules/beautiful-mermaid)
