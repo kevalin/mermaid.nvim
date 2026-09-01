@@ -202,7 +202,7 @@ function M.start_server(target_port)
   local port_to_bind = (type(target_port) == "number" and target_port > 0) and target_port or 0
 
   M.server = uv.new_tcp()
-  local bind_ok, bind_err = M.server:bind("127.0.0.1", port_to_bind)
+  local bind_ok, bind_err = M.server:bind("0.0.0.0", port_to_bind)
   if not bind_ok then
     M.server:close()
     M.server = nil

@@ -51,7 +51,7 @@ describe("mermaid server", function()
       local occupied_port = 19422
 
       local dummy = uv.new_tcp()
-      dummy:bind("127.0.0.1", occupied_port)
+      dummy:bind("0.0.0.0", occupied_port)
       dummy:listen(128, function() end)
 
       local notifications = {}
