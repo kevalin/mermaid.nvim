@@ -36,6 +36,47 @@ describe("mermaid server", function()
       assert.is_nil(server.server)
       assert.is_nil(server.port)
     end)
+
+    it("binds to specified port when target_port is provided", function()
+      local server = require("mermaid.server")
+      local custom_port = 19421
+      local port = server.start_server(custom_port)
+      assert.are.equal(custom_port, port)
+      server.stop_server()
+    end)
+
+    it("returns nil and notifies when target_port is already in use", function()
+      local server = require("mermaid.server")
+      local uv = vim.loop
+      local occupied_port = 19422
+
+      local dummy = uv.new_tcp()
+      dummy:bind("127.0.0.1", occupied_port)
+      dummy:listen(128, function() end)
+
+      local notifications = {}
+      local orig_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notifications, { msg = msg, level = level })
+      end
+
+      local port = server.start_server(occupied_port)
+
+      vim.notify = orig_notify
+      dummy:close()
+
+      assert.is_nil(port)
+      assert.is_true(#notifications > 0)
+      assert.is_true(notifications[1].msg:find("already in use") ~= nil)
+    end)
+
+    it("binds to random port when target_port is 0 or nil", function()
+      local server = require("mermaid.server")
+      local port = server.start_server(0)
+      assert.is_number(port)
+      assert.is_true(port > 0)
+      server.stop_server()
+    end)
   end)
 
   describe("content broadcast", function()
