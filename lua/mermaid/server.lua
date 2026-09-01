@@ -195,17 +195,22 @@ function M.set_content(content)
   end
 end
 
---- Start the HTTP server, return the assigned port
-function M.start_server()
+--- Start the HTTP server, return the assigned port or nil on failure
+function M.start_server(target_port)
   if M.server then return M.port end
 
+  local port_to_bind = (type(target_port) == "number" and target_port > 0) and target_port or 0
+
   M.server = uv.new_tcp()
-  M.server:bind("127.0.0.1", 0)
+  local bind_ok, bind_err = M.server:bind("0.0.0.0", port_to_bind)
+  if not bind_ok then
+    M.server:close()
+    M.server = nil
+    vim.notify(string.format("Mermaid: Failed to bind to port %d: %s", port_to_bind, tostring(bind_err)), vim.log.levels.ERROR)
+    return nil
+  end
 
-  local addr = M.server:getsockname()
-  M.port = addr.port
-
-  M.server:listen(128, function(err)
+  local listen_ok, listen_err = M.server:listen(128, function(err)
     if err then
       vim.schedule(function()
         vim.notify("Mermaid: Listen error: " .. tostring(err), vim.log.levels.ERROR)
@@ -261,6 +266,24 @@ function M.start_server()
     end)
   end)
 
+  if not listen_ok then
+    M.server:close()
+    M.server = nil
+    M.port = nil
+    vim.notify(string.format("Mermaid: Port %d is already in use or unavailable (%s)", port_to_bind, tostring(listen_err)), vim.log.levels.ERROR)
+    return nil
+  end
+
+  local addr = M.server:getsockname()
+  if not addr then
+    M.server:close()
+    M.server = nil
+    M.port = nil
+    vim.notify("Mermaid: Failed to get socket name", vim.log.levels.ERROR)
+    return nil
+  end
+
+  M.port = addr.port
   return M.port
 end
 
