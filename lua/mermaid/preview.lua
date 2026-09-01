@@ -19,9 +19,9 @@ function M.preview()
   server.set_theme_mode(detect_theme_mode())
 
   -- Start server if not running
-  local port = server.start_server()
+  local config_port = (require("mermaid").config.preview or {}).port
+  local port = server.start_server(config_port)
   if not port then
-      vim.notify("Mermaid: Failed to start server", vim.log.levels.ERROR)
       return
   end
 
