@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/github/license/kevalin/mermaid.nvim)
 ![Neovim](https://img.shields.io/badge/Neovim-%3E%3D0.9.5-green)
 ![Test](https://github.com/kevalin/mermaid.nvim/actions/workflows/ci.yml/badge.svg)
+[![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_804c8d972cd769278717)
 
 ---
 
