@@ -1,6 +1,6 @@
 # mermaid.nvim 🧜
 
-> A feature-rich Neovim plugin for working with [Mermaid](https://mermaid.js.org/) diagrams — preview, format, lint, and render inline in your terminal.
+> A feature-rich Neovim plugin for working with [Mermaid](https://mermaid.ai/open-source) diagrams — preview, format, lint, and render inline in your terminal.
 
 ![License](https://img.shields.io/github/license/kevalin/mermaid.nvim)
 ![Neovim](https://img.shields.io/badge/Neovim-%3E%3D0.9.5-green)
